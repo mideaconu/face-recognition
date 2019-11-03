@@ -1,0 +1,8 @@
+# Byte-compiled/optimized/DLL files
+__pycache__/
+
+# Datasets
+data/
+
+# Jupyter Notebook
+.ipynb_checkpoints
