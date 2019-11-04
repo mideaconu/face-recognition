@@ -1,151 +1,172 @@
-import numpy as np
-import numbers
-import collections
 import heapq
+import collections
+import numbers
+import numpy as np
+
 
 """ k-Nearest Neighbours (kNN)
 
 :param data: Training data
-:param labels: Labels of the training data
-:return dist: Distance metric function
+:param labels: Training data labels
+:return distance: Distance metric function (e.g. Euclidean)
 :return leaf_size: Size of the ball tree leaves
 """
 class kNN:
 
-    def __init__(self, data, labels, dist, leaf_size):
-        self.__data = data
-        self.__labels = labels
-        self.__dist = dist
-        self.__leaf_size = leaf_size
+    def __init__(self, data, labels, distance, leaf_size):
+        self._data = data
+        self._labels = labels
+        self._distance = distance
+        self._leaf_size = leaf_size
 
-        if not isinstance(self.__data, np.ndarray):
-            raise ValueError("Data must be a NumPy array.")
-
-        if len(self.__data) == 0:
+        if len(self._data) == 0:
             raise ValueError("Data cannot be empty.")
 
-        if not all(isinstance(i, numbers.Number) for i in np.array(self.__data).flatten()):
+        if not all(isinstance(i, numbers.Number) for i in np.array(self._data).flatten()):
             raise ValueError("Data contains non-numeric values.")
 
-        if not isinstance(self.__labels, (list, np.ndarray)):
-            raise ValueError("Labels must be a list or NumPy array.")
-
-        if len(self.__data) != len(self.__labels):
+        if len(self._data) != len(self._labels):
             raise ValueError("Data and labels must have the same length.")
 
-        if not isinstance(self.__dist, collections.Callable):
+        if not isinstance(self._distance, collections.Callable):
             raise ValueError("Distance metric must be a callable method.")
 
-        if self.__leaf_size < 1:
+        if not isinstance(self._labels, (list, np.ndarray)):
+            raise ValueError("Labels must be in the form of a list or NumPy array.")
+
+        if self._leaf_size < 1:
             raise ValueError("Leaf size must be a positive integer.")
 
-    def construct_tree(self):
-        self.__ball_tree = BallTree(self.__data, self.__dist, self.__leaf_size)
+        if not isinstance(self._data, np.ndarray):
+            self._data = np.asarrat(self._data)
+
+    """ Construct Ball Tree """
+    def construct_ball_tree(self):
+        self._ball_tree = BallTree(self._data, self._distance, self._leaf_size)
+
+    @property 
+    def ball_tree(self):
+        return self._ball_tree
 
     """ Search the ball tree for the k nearest neighbours
 
     :param self: Instance to which the method belongs
     :param k: Number of nearest neighbours to return
-    :return point: The point whose neighbours are requested
+    :return neighbour_labels: The labels of the k neighbours of the given point
     """
     def find_knn(self, k, point):
-        if k < 0:
-            raise ValueError("Number of neighbours must be non-negative.")
-        if k == 0:
-            return np.array([])
-        if k > self.__data.shape[0]:
-            raise ValueError("Number of neighbours must be less than the number of data points.")
-        if point.shape[0] != self.__data.shape[1]:
-            raise ValueError("Dimension of query point must match dimension of data.")
+        if k <= 0:
+            raise ValueError("Number of neighbours must be a positive integer.")
 
-        self.__pq = [(np.inf, np.zeros(self.__data.shape[1]))] * k
-        heapq.heapify(self.__pq)
-        self.__search_kd_subtree(self.__ball_tree.get_root(), k, point)
-        return np.array([self.__labels[self.__data.tolist().index(i[1])] for i in self.__pq])
+        if k > self._data.shape[0]:
+            raise ValueError("Number of neighbours must be less than the number of data points.")
+
+        if point.shape[0] != self._data.shape[1]:
+            raise ValueError("Dimension of query point must match dimension of the data.")
+
+        # Initialize the priority queue with k infinity falues (distances) and origin points (neighbours)
+        self._pq = [(np.inf, np.zeros(self._data.shape[1]))] * k
+        heapq.heapify(self._pq)
+        self._search_kd_subtree(self._ball_tree.root, k, point)
+        neighbour_labels = np.array([self._labels[self._data.tolist().index(i[1])] for i in self._pq])
+        return neighbour_labels
 
     """ Search one ball subtree for the k nearest neighbours
 
     :param self: Instance to which the method belongs
     :param node: The node to be traversed
-    :param k: Number of nearest neighbours to return
-    :return point: The point whose neighbours are requested
+    :param k: Number of nearest neighbours to find
     """
-    def __search_kd_subtree(self, node, k, point):
-        if self.__dist(point, node.get_pivot()) >= heapq.nlargest(1, self.__pq)[0][0]:
-            return 
+    def _search_kd_subtree(self, node, k, point):
+        # Check whether the largest distance in the current priority queue is smaller than the distance to the node's ball
+        if self._distance(point, node.pivot) - node.radius >= heapq.nlargest(1, self._pq)[0][0]:
+            pass
         elif node.is_leaf():
-            for node_point in node.get_points():
-                if self.__dist(point, node_point) < heapq.nlargest(1, self.__pq)[0][0]:
-                    heapq.heappush(self.__pq, (self.__dist(point, node_point), node_point.tolist()))
-                    heapq._heapify_max(self.__pq)
-                    if len(self.__pq) > k:
-                        heapq._heappop_max(self.__pq)
+            for node_point in node.points:
+                if self._distance(point, node_point) < heapq.nlargest(1, self._pq)[0][0]:
+                    heapq.heappush(self._pq, (self._distance(point, node_point), node_point.tolist()))
+                    heapq._heapify_max(self._pq)
+                    if len(self._pq) > k:
+                        heapq._heappop_max(self._pq)
         else:
-            if node.get_closest_child():
-                self.__search_kd_subtree(node.get_closest_child(), k, point)
-            if node.get_furthest_child():
-                self.__search_kd_subtree(node.get_furthest_child(), k, point)
+            if node.closest_child:
+                self._search_kd_subtree(node.closest_child, k, point)
+            if node.farthest_child:
+                self._search_kd_subtree(node.farthest_child, k, point)
+
 
 """ Ball Tree
 
 :param data: Training data
-:return dist: Distance metric function
+:return distance: Distance metric function (e.g. Euclidean)
 :return leaf_size: Size of the ball tree leaves
 """
 class BallTree:
-    def __init__(self, data, dist, leaf_size):
-        self.__data = data
-        self.__dist = dist
-        self.__leaf_size = leaf_size
-        self.__root = BallNode(self.__data, self.__dist, self.__leaf_size)
 
-    def get_root(self):
-        return self.__root
+    def __init__(self, data, distance, leaf_size):
+        self._data = data
+        self._distance = distance
+        self._leaf_size = leaf_size
+        self._root = BallNode(self._data, self._distance, self._leaf_size)
+
+    @property
+    def root(self):
+        return self._root
+
 
 """ Ball Tree Node
 
 :param data: Training data
-:return dist: Distance metric function
+:return distance: Distance metric function (e.g. Euclidean)
 :return leaf_size: Size of the ball tree leaves
 """
 class BallNode:
-    def __init__(self, data, dist, leaf_size):
-        self.__data = data
-        self.__dist = dist
-        self.__leaf_size = leaf_size
 
-        self.__child1 = None; self.__child2 = None
+    def __init__(self, data, distance, leaf_size):
+        self._data = data
+        self._distance = distance
+        self._leaf_size = leaf_size
 
-        self.__pivot = np.mean(self.__data, axis=0)
-        distances_from_pivot = [self.__dist(self.__pivot, point) for point in self.__data]
+        self._farthest_child = None; self._closest_child = None
+
+        self._pivot = np.mean(self._data, axis=0)
+        distances_from_pivot = [self._distance(self._pivot, point) for point in self._data]
         farthest = heapq.nlargest(2, range(len(distances_from_pivot)), key=distances_from_pivot.__getitem__)
-        
+
         i_farthest = farthest[0]
-        self.__radius = self.__dist(self.__pivot, self.__data[i_farthest])
+        self._radius = self._distance(self._pivot, self._data[i_farthest])
         if len(farthest) > 1:
             i_2nd_farthest = farthest[1]
-            child1_points = []; child2_points = []
-            for point in self.__data:
-                if self.__dist(point, self.__data[i_farthest]) <= self.__dist(point, self.__data[i_2nd_farthest]):
-                    child1_points.append(point)
+            farthest_child_points = []; closest_child_points = []
+            for point in self._data:
+                if self._distance(point, self._data[i_farthest]) <= self._distance(point, self._data[i_2nd_farthest]):
+                    farthest_child_points.append(point)
                 else:
-                    child2_points.append(point)
+                    closest_child_points.append(point)
 
-        if len(self.__data) > self.__leaf_size:
-            self.__child1 = BallNode(child1_points, self.__dist, self.__leaf_size)
-            self.__child2 = BallNode(child2_points, self.__dist, self.__leaf_size)
+        if len(self._data) > self._leaf_size:
+            self._farthest_child = BallNode(farthest_child_points, self._distance, self._leaf_size)
+            self._closest_child = BallNode(closest_child_points, self._distance, self._leaf_size)
 
-    def get_pivot(self):
-        return self.__pivot
+    @property
+    def pivot(self):
+        return self._pivot
 
-    def get_points(self):
-        return self.__data
+    @property
+    def radius(self):
+        return self._radius
 
-    def get_closest_child(self):
-        return self.__child1
+    @property
+    def points(self):
+        return self._data
 
-    def get_furthest_child(self):
-        return self.__child2
+    @property
+    def farthest_child(self):
+        return self._farthest_child
+
+    @property
+    def closest_child(self):
+        return self._closest_child
 
     def is_leaf(self):
-        return not self.__child1 and not self.__child2
+        return not self._farthest_child and not self._closest_child
