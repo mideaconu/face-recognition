@@ -5,7 +5,7 @@ import numpy as np
 """ Principal Component Analysis (PCA)
 
 :param data: NumPy dataset to perform PCA on (n_samples x n_features)
-:param n_components: Number of Principal Components to be selected
+:param n_components: Number of principal components to be selected
 """
 class PCA:
 
@@ -35,7 +35,7 @@ class PCA:
         np.testing.assert_allclose(self._s_matrix, np.dot(np.transpose(self._data), self._data) / (self._data.shape[0]-1))
         # Compute eigenvalues and eigenvectors of covariance matrix
         self._eigval, self._eigvec, = np.linalg.eig(self._s_matrix)
-        # Test the equality constraint of eigenvalues and aigenvectors:
+        # Test the constraint of eigenvalues and eigenvectors:
         # _s_matrix @ _eigvec = _eigval @ _eigvec
         for i in range(self._data.shape[1]):
             np.testing.assert_allclose(np.dot(np.cov(np.transpose(self._data)), _eigvec[i]), np.dot(_eigval[i], _eigvec[i]))
@@ -49,7 +49,7 @@ class PCA:
         # Test that the explained variance is a statistic
         assert self._explained_variance >= 0 and self._explained_variance <= 100
 
-    """ Order Eigenvalues/Eigenvectors
+    """ Order eigenvalues/eigenvectors
     Given a vector of eigenvectors and corresponding eigenvalues, it orders the 
     eigenvectors with respect to their eigenvalues.
 
@@ -89,7 +89,7 @@ class PCA:
 """ Independent Component Analysis (ICA)
 
 :param data: NumPy dataset to perform ICA on (n_samples x n_features)
-:param n_components: Number of Independent Components to be selected
+:param n_components: Number of independent components to be selected
 """
 class ICA:
 
@@ -101,22 +101,41 @@ class ICA:
             raise ValueError("Data must be a NumPy array.")
 
         if self._data.size == 0:
-            raise ValueError("Data is an empty array.")
+            raise ValueError("Data cannot be empty.")
 
-        if self._n_components < 1 or self._n_components > self._data.shape[1]:
+        if not all(isinstance(i, numbers.Number) for i in np.array(self._data).flatten()):
+            raise ValueError("Data contains non-numeric values.")
+
+        if not isinstance(self._n_components, int):
+            raise ValueError("Number of components must be an integer.")
+
+        if len(self._data.shape) < 2:
+            raise ValueError("Data contains ambiguous dimensionality.")
+        elif self._n_components < 1 or self._n_components > self._data.shape[1]:
             raise ValueError("Invalid number of components, must be between 1 and n_features.")
 
         self._whitened_data, self._whitening_matrix = _whiten(self._data)
+        # Test the constraint of the whitened data:
+        # cov(X @ W) = I
+        np.testing.assert_allclose(np.cov(self._whitened_data), np.eye(self._data.shape[1]), atol=1e-10)
+        # Test the constraint of the whitening matrix:
+        # W^T @ W = cov(X)^-1
+        np.testing.assert_allclose(np.linalg.inv(np.cov(np.transpose(self._data))), np.dot(np.transpose(self._whitening_matrix), self._whitening_matrix))
         self._whitened_data = np.transpose(self._whitened_data)
         self._raw_components = []
         for i in range(self._n_components):
             component = _compute_unit(self._whitened_data, self._raw_components)
             self.__raw_components.append(component)
         self._raw_components = np.vstack(self._raw_components)
+        # Test for independence of the components:
+        # S^T @ S = I
+        np.testing.assert_allclose(np.dot(np.transpose(self._raw_components), self._raw_components), np.eye(self._data.shape[1]), atol=1e-10)
         self._components = np.dot(self._raw_components, self._whitening_matrix)
+        # Check the same of the components
+        assert self._components.shape == (self._n_components, self._n_components)
 
 
-    """ Data Whitening
+    """ Data whitening
     Decorrelates the components of the data
 
     :param: Data to whiten
@@ -130,7 +149,7 @@ class ICA:
         data_w = np.dot(data, np.transpose(W))
         return data_w, W
 
-    """ Data Centering
+    """ Data centering
     Center features by removing the mean
 
     :param: Data to center
@@ -139,19 +158,19 @@ class ICA:
     def _center(data):
         return data - np.mean(data, axis=0)
 
-    """ Kurtosis Function
+    """ Kurtosis function
     kurt(x) = 4 * u^3
     """
     def _g(u):
         return 4 * u**3
 
-    """ Derivated Kurtosis Function
+    """ Derivated kurtosis function
     kurt'(x) = 12 * u^2
     """
     def _dg(u):
         return 12 * u**2
 
-    """ Compute one Independent Component in ICA
+    """ Compute one independent component
 
     :param X: Whitened data
     :param W: Existing independent components
