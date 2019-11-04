@@ -1,32 +1,53 @@
+import numbers
 import numpy as np
+
 
 """ Principal Component Analysis (PCA)
 
-:param data: Dataset to perform PCA on (n_samples x n_features)
+:param data: NumPy dataset to perform PCA on (n_samples x n_features)
 :param n_components: Number of Principal Components to be selected
 """
 class PCA:
 
     def __init__(self, data, n_components):
-        self.__data = data
-        self.__n_components = n_components
+        self._data = data
+        self._n_components = n_components
 
-        if not isinstance(self.__data, np.ndarray):
+        if not isinstance(self._data, np.ndarray):
             raise ValueError("Data must be a NumPy array.")
 
-        if self.__data.size == 0:
-            raise ValueError("Data is an empty array.")
+        if self._data.size == 0:
+            raise ValueError("Data cannot be empty.")
 
-        if self.__n_components < 1 or self.__n_components > self.__data.shape[1]:
+        if not all(isinstance(i, numbers.Number) for i in np.array(self._data).flatten()):
+            raise ValueError("Data contains non-numeric values.")
+
+        if not isinstance(self._n_components, int):
+            raise ValueError("Number of components must be an integer.")
+
+        if len(self._data.shape) < 2:
+            raise ValueError("Data contains ambiguous dimensionality.")
+        elif self._n_components < 1 or self._n_components > self._data.shape[1]:
             raise ValueError("Invalid number of components, must be between 1 and n_features.")
 
-        self.__s_matrix = np.cov(self.__data.T)
+        self._s_matrix = np.cov(np.transpose(self._data))
+        # Test that the scatter matrix is computer properly
+        np.testing.assert_allclose(self._s_matrix, np.dot(np.transpose(self._data), self._data) / (self._data.shape[0]-1))
         # Compute eigenvalues and eigenvectors of covariance matrix
-        self.__eigval, self.__eigvec, = np.linalg.eig(self.__s_matrix)
-        self.__eigval, self.__eigvec = self.__order_eig(self.__eigval, self.__eigvec)
-
-        self.__components = self.__eigvec[:self.__n_components]
-        self.__explained_variance = np.sum(self.__eigval[:self.__n_components]) / np.sum(self.__eigval) * 100
+        self._eigval, self._eigvec, = np.linalg.eig(self._s_matrix)
+        # Test the equality constraint of eigenvalues and aigenvectors:
+        # _s_matrix @ _eigvec = _eigval @ _eigvec
+        for i in range(self._data.shape[1]):
+            np.testing.assert_allclose(np.dot(np.cov(np.transpose(self._data)), _eigvec[i]), np.dot(_eigval[i], _eigvec[i]))
+        self._eigval, self._eigvec = _order_eig(self._eigval, self._eigvec)
+        # Test whether eigenvalues have been sorted properly
+        np.testing.assert_equal(_eigval, sorted(_eigval, reverse=True))
+        self._components = self._eigvec[:self._n_components]
+        # Verify the shape of the components
+        assert self._components.shape == (self._n_components, self._data.shape[1])
+        self._explained_variance = np.sum(self._eigval[:self._n_components]) / np.sum(self._eigval) * 100
+        # Test that the explained variance is a statistic
+        assert self._explained_variance >= 0 and self._explained_variance <= 100
 
     """ Order Eigenvalues/Eigenvectors
     Given a vector of eigenvectors and corresponding eigenvalues, it orders the 
@@ -37,56 +58,62 @@ class PCA:
     :return eigval: Sorted list of eigenvalues
     :return eigvec: Sorted list of eigenvectors
     """
-    def __order_eig(self, eigval, eigvec):
+    def _order_eig(eigval, eigvec):
         eigpairs = [(eigval[i], eigvec[:,i]) for i in range(len(eigval))]
         eigpairs.sort(reverse=True)
         eigval = np.array([elem.real for elem,_ in eigpairs])
         eigvec = np.array([elem.real for _,elem in eigpairs])
         return eigval, eigvec
 
-    def get_scatter_matrix(self):
-        return self.__s_matrix
+    @property
+    def scatter_matrix(self):
+        return self._s_matrix
 
-    def get_eigvec(self):
-        return self.__eigvec
+    @property
+    def eigvectors(self):
+        return self._eigvec
 
-    def get_eigval(self):
-        return self.__eigval
+    @property
+    def eigvalalues(self):
+        return self._eigval
 
-    def get_components(self):
-        return self.__components
+    @property
+    def components(self):
+        return self._components
 
-    def get_explained_variance(self):
-        return self.__explained_variance
+    @property
+    def explained_variance(self):
+        return self._explained_variance
+
 
 """ Independent Component Analysis (ICA)
 
-:param data: Dataset to perform ICA on (n_samples x n_features)
+:param data: NumPy dataset to perform ICA on (n_samples x n_features)
 :param n_components: Number of Independent Components to be selected
 """
 class ICA:
 
     def __init__(self, data, n_components):
-        self.__data = data
-        self.__n_components = n_components
+        self._data = data
+        self._n_components = n_components
 
-        if not isinstance(self.__data, np.ndarray):
+        if not isinstance(self._data, np.ndarray):
             raise ValueError("Data must be a NumPy array.")
 
-        if self.__data.size == 0:
+        if self._data.size == 0:
             raise ValueError("Data is an empty array.")
 
-        if self.__n_components < 1 or self.__n_components > self.__data.shape[1]:
+        if self._n_components < 1 or self._n_components > self._data.shape[1]:
             raise ValueError("Invalid number of components, must be between 1 and n_features.")
 
-        self.__whitened_data, self.__whitening_matrix = self.__whiten(self.__data)
-        self.__whitened_data = np.transpose(self.__whitened_data)
-        self.__raw_components = []
-        for i in range(self.__n_components):
-            component = self.__compute_unit(self.__whitened_data, self.__raw_components)
+        self._whitened_data, self._whitening_matrix = _whiten(self._data)
+        self._whitened_data = np.transpose(self._whitened_data)
+        self._raw_components = []
+        for i in range(self._n_components):
+            component = _compute_unit(self._whitened_data, self._raw_components)
             self.__raw_components.append(component)
-        self.__raw_components = np.vstack(self.__raw_components)
-        self.__components = np.dot(self.__raw_components, self.__whitening_matrix)
+        self._raw_components = np.vstack(self._raw_components)
+        self._components = np.dot(self._raw_components, self._whitening_matrix)
 
 
     """ Data Whitening
@@ -94,13 +121,13 @@ class ICA:
 
     :param: Data to whiten
     :return X_w: Whitened data
-    :return K: Whitening matrix
+    :return W: Whitening matrix
     """
-    def __whiten(self, data):
-        data = self.__center(data)
+    def _whiten(data):
+        data = _center(data)
         eigval, eigvec, = np.linalg.eig(np.cov(np.transpose(data)))
-        W = np.dot(eigvec, np.dot(np.diag(1 / np.sqrt(eigval+1e-9)), eigvec.T))
-        data_w = np.dot(data, W.T)
+        W = np.dot(eigvec, np.dot(np.diag(1 / np.sqrt(eigval+1e-9)), np.transpose(eigvec)))
+        data_w = np.dot(data, np.transpose(W))
         return data_w, W
 
     """ Data Centering
@@ -109,19 +136,19 @@ class ICA:
     :param: Data to center
     :return: Centered data
     """
-    def __center(self, data):
+    def _center(data):
         return data - np.mean(data, axis=0)
 
     """ Kurtosis Function
     kurt(x) = 4 * u^3
     """
-    def __g(self, u):
+    def _g(u):
         return 4 * u**3
 
     """ Derivated Kurtosis Function
     kurt'(x) = 12 * u^2
     """
-    def __dg(self, u):
+    def _dg(u):
         return 12 * u**2
 
     """ Compute one Independent Component in ICA
@@ -130,12 +157,12 @@ class ICA:
     :param W: Existing independent components
     :return: New indendent component
     """
-    def __compute_unit(self, X, W):
+    def _compute_unit(X, W):
         w = np.random.rand(X.shape[0])
         w /= np.linalg.norm(w)
         for iter in range(5000):
             w0 = w
-            w = (1 / X.shape[1]-1) * np.dot(X, self.__g(np.dot(np.transpose(w), X))) - (1 / X.shape[1]-1) * np.dot(self.__dg(np.dot(np.transpose(w), X)), np.ones((X.shape[1], 1))) * w
+            w = (1 / X.shape[1]-1) * np.dot(X, _g(np.dot(np.transpose(w), X))) - (1 / X.shape[1]-1) * np.dot(_dg(np.dot(np.transpose(w), X)), np.ones((X.shape[1], 1))) * w
             for w_ in W:
                 w = w - np.dot(np.transpose(w), w_) * w_
             w /= np.linalg.norm(w) 
@@ -144,58 +171,63 @@ class ICA:
                 break
         return w
 
-    def get_whitening_matrix(self):
-        return self.__whitening_matrix
+    @property
+    def whitening_matrix(self):
+        return self._whitening_matrix
 
-    def get_whitened_data(self):
-        return self.__whitened_data
+    @property
+    def whitened_data(self):
+        return self._whitened_data
 
-    def get_raw_components(self):
-        return self.__raw_components
+    @property
+    def raw_components(self):
+        return self._raw_components
 
-    def get_components(self):
-        return self.__components
+    @property
+    def components(self):
+        return self._components
+
 
 """ Linear Discriminant Analysis (LDA)
 
-:param data: Dataset to perform LDA on (n_samples x n_features)
+:param data: NumPy dataset to perform LDA on (n_samples x n_features)
 :param labels: List of labels (classes) associated with each data point
 :param n_dimensions: Number of dimensions to be selected
 """
 class LDA:
-    
-    def __init__(self, data, labels, n_dimensions):
-        self.__data = data
-        self.__labels = labels
-        self.__n_dimensions = n_dimensions
 
-        if not isinstance(self.__data, np.ndarray):
+    def __init__(self, data, labels, n_dimensions):
+        self._data = data
+        self._labels = labels
+        self._n_dimensions = n_dimensions
+
+        if not isinstance(self._data, np.ndarray):
             raise ValueError("Data must be a NumPy array.")
 
-        if self.__data.size == 0:
+        if self._data.size == 0:
             raise ValueError("Data is an empty array.")
 
-        if self.__n_dimensions < 1 or self.__n_dimensions > self.__data.shape[1]:
+        if self._n_dimensions < 1 or self._n_dimensions > self._data.shape[1]:
             raise ValueError("Invalid number of dimensions, must be between 1 and n_features.")
 
-        __c_means, __c_sizes = self.__class_means(self.__data, self.__labels)
-        __t_mean = np.array(list(__c_means.values())).mean(axis=0)
-        __S_b = self.__between_class(__c_means, __c_sizes, __t_mean)
-        __S_w = self.__within_class(self.__data, self.__labels, __c_means)
-        self.__W = np.dot(np.linalg.inv(__S_w), __S_b)
+        _c_means, _c_sizes = _class_means(self._data, self._labels)
+        _t_mean = np.array(list(_c_means.values())).mean(axis=0)
+        _S_b = _between_class(_c_means, _c_sizes, _t_mean)
+        _S_w = _within_class(self._data, self._labels, _c_means)
+        self._W = np.dot(np.linalg.inv(_S_w), _S_b)
 
-        self.__eigval, self.__eigvec, = np.linalg.eig(np.cov(self.__W))
-        self.__eigval, self.__eigvec = self.__order_eig(self.__eigval, self.__eigvec)
-        self.__components = self.__eigvec[:self.__n_dimensions]
+        self._eigval, self._eigvec, = np.linalg.eig(np.cov(self._W))
+        self._eigval, self._eigvec = _order_eig(self._eigval, self._eigvec)
+        self._components = self._eigvec[:self._n_dimensions]
 
     """ Compute the mean for each class in the data
 
-    :param X: Data
-    :param y: Labels
+    :param data: Input data (n_samples x n_features)
+    :param labels: Input data labels
     :return means: Dictionary of class:mean entries
     :return c_sizes: List of class sizes
     """
-    def __class_means(self, data, labels):
+    def _class_means(data, labels):
         c_means = dict((class_, np.zeros(data.shape[1])) for class_ in set(labels))
         c_sizes = dict((class_, 0) for class_ in set(labels))
         for index in range(len(labels)):
@@ -211,7 +243,7 @@ class LDA:
     :param t_mean: Total mean
     :return: Between-class matrix
     """
-    def __between_class(self, c_means, c_sizes, t_mean):
+    def _between_class(c_means, c_sizes, t_mean):
         S_b = np.zeros((len(t_mean), len(t_mean)))
         for class_ in c_means.keys():
             S_b += c_sizes[class_] * np.outer((c_means[class_] - t_mean), (c_means[class_] - t_mean))
@@ -219,12 +251,12 @@ class LDA:
 
     """ Within-Class Matrix
 
-    :param X: Data
-    :param y: Labels
+    :param data: Input data (n_samples x n_features)
+    :param labels: Input data labels
     :param c_means: List of class means
     :return: Within-class matrix
     """
-    def __within_class(self, data, labels, c_means):
+    def _within_class(data, labels, c_means):
         data = np.array([data[i] - c_means[labels[i]] for i in range(data.shape[0])])
         S_w = np.zeros((data.shape[1], data.shape[1]))
         for class_ in c_means.keys():
@@ -240,7 +272,7 @@ class LDA:
     :return eigval: Sorted list of eigenvalues
     :return eigvec: Sorted list of eigenvectors
     """
-    def __order_eig(self, eigval, eigvec):
+    def _order_eig(eigval, eigvec):
         eigpairs = [(eigval[i], eigvec[:,i]) for i in range(len(eigval))]
         print(eigpairs)
         eigpairs.sort(reverse=True)
@@ -248,14 +280,18 @@ class LDA:
         eigvec = np.array([elem.real for _,elem in eigpairs])
         return eigval, eigvec
 
-    def get_transformation_matrix(self):
-        return self.__W
+    @property
+    def transformation_matrix(self):
+        return self._W
 
-    def get_eigvec(self):
-        return self.__eigvec
+    @property
+    def eigvectors(self):
+        return self._eigvec
 
-    def get_eigval(self):
-        return self.__eigval
+    @property
+    def eigvalues(self):
+        return self._eigval
 
-    def get_components(self):
-        return self.__components
+    @property
+    def components(self):
+        return self._components

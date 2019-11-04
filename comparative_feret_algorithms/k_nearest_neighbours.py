@@ -6,8 +6,8 @@ import numpy as np
 
 """ k-Nearest Neighbours (kNN)
 
-:param data: Training data
-:param labels: Training data labels
+:param data: Numpy training data (n_samples x n_features)
+:param labels: Training data labels (n_features)
 :return distance: Distance metric function (e.g. Euclidean)
 :return leaf_size: Size of the ball tree leaves
 """
@@ -19,26 +19,23 @@ class kNN:
         self._distance = distance
         self._leaf_size = leaf_size
 
-        if len(self._data) == 0:
+        if not isinstance(self._labels, np.ndarray):
+            raise ValueError("Labels must be in the form of aNumPy array.")
+
+        if self._data.size == 0:
             raise ValueError("Data cannot be empty.")
 
         if not all(isinstance(i, numbers.Number) for i in np.array(self._data).flatten()):
             raise ValueError("Data contains non-numeric values.")
 
-        if len(self._data) != len(self._labels):
+        if self._data.size != len(self._labels):
             raise ValueError("Data and labels must have the same length.")
 
         if not isinstance(self._distance, collections.Callable):
             raise ValueError("Distance metric must be a callable method.")
 
-        if not isinstance(self._labels, (list, np.ndarray)):
-            raise ValueError("Labels must be in the form of a list or NumPy array.")
-
         if self._leaf_size < 1:
             raise ValueError("Leaf size must be a positive integer.")
-
-        if not isinstance(self._data, np.ndarray):
-            self._data = np.asarrat(self._data)
 
     """ Construct Ball Tree """
     def construct_ball_tree(self):
@@ -97,7 +94,7 @@ class kNN:
 
 """ Ball Tree
 
-:param data: Training data
+:param data: Numpy training data (n_samples x n_features)
 :return distance: Distance metric function (e.g. Euclidean)
 :return leaf_size: Size of the ball tree leaves
 """
@@ -116,7 +113,7 @@ class BallTree:
 
 """ Ball Tree Node
 
-:param data: Training data
+:param data: Numpy training data (n_samples x n_features)
 :return distance: Distance metric function (e.g. Euclidean)
 :return leaf_size: Size of the ball tree leaves
 """

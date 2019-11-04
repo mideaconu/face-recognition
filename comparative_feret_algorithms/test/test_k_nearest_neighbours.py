@@ -1,7 +1,9 @@
+import sys
+
 import unittest
 import collections
 import numpy as np
-import sys
+
 sys.path.append("..")
 from k_nearest_neighbours import kNN
 
@@ -13,6 +15,7 @@ labels = [chr(i) for i in range(ord('a'), ord('p')+1)]
 
 def euclidean(a, b):
     return np.linalg.norm(a - b)
+
 
 class kNNTest(unittest.TestCase):
 
