@@ -4,14 +4,7 @@ import unittest
 import collections
 import numpy as np
 
-sys.path.append("..")
-from k_nearest_neighbours import kNN
-
-data = np.array([[1, 1], [1, 2], [2, 2], [2, 8], [3, 5], [3, 6], [3, 10], 
-                [4, 6], [6, 3], [6, 6], [6, 9], [7, 1], [8, 1], [9, 5], 
-                [9, 9], [9, 10]])
-
-labels = [chr(i) for i in range(ord('a'), ord('p')+1)]
+from comparative_feret_algorithms import k_nearest_neighbours as knn
 
 def euclidean(a, b):
     return np.linalg.norm(a - b)
@@ -19,49 +12,35 @@ def euclidean(a, b):
 
 class kNNTest(unittest.TestCase):
 
-    def setUp(self):
-        self.knn = kNN(data, labels, euclidean, 1)
-        self.knn.construct_tree()
-
-        self.knn_2 = kNN(data, labels, euclidean, 2)
-        self.knn_2.construct_tree()
-
-        self.knn_n = kNN(data, labels, euclidean, data.shape[0])
-        self.knn_n.construct_tree()
-
-        self.knn_n_1 = kNN(data, labels, euclidean, data.shape[0]+1)
-        self.knn_n_1.construct_tree()
+    """ Input parameter test: data """
     
-    def test_null_data(self):
+    def test_data_null(self):
         with self.assertRaises(ValueError):
-            knn_ = kNN(None, ['a', 'b', 'c'], euclidean, 1)
+            knn_ = knn.kNN(None, ['a', 'b', 'c'], euclidean, 1)
 
-    def test_int_type_data(self):
+    def test_data_float(self):
         with self.assertRaises(ValueError):
-            knn_ = kNN(0, ['a', 'b', 'c'], euclidean, 1)
+            knn_ = knn.kNN(0., ['a', 'b', 'c'], euclidean, 1)
 
-    def test_float_type_data(self):
+    def test_data_list(self):
         with self.assertRaises(ValueError):
-            knn_ = kNN(0., ['a', 'b', 'c'], euclidean, 1)
+            knn_ = knn.kNN([], ['a', 'b', 'c'], euclidean, 1)
 
-    def test_str_type_data(self):
+    def test_data_empty(self):
         with self.assertRaises(ValueError):
-            knn_ = kNN("0", ['a', 'b', 'c'], euclidean, 1)
+            knn_ = knn.kNN(np.array([]), ['a', 'b', 'c'], euclidean, 1)
 
-    def test_list_data(self):
+    def test_data_nonnumeric(self):
         with self.assertRaises(ValueError):
-            knn_ = kNN([0, 1, 2], ['a', 'b', 'c'], euclidean, 1)
+            knn_ = knn.kNN(np.array([0, 0, 'a']), ['a', 'b', 'c'], euclidean, 1)
 
-    def test_empty_data(self):
-        with self.assertRaises(ValueError):
-            knn_ = kNN(np.array([]), ['a', 'b', 'c'], euclidean, 1)
+    def test_data_dimensionality(self):
+        knn_ = kNN(np.array([[0, 0], [0]]), ['a', 'b', 'c'], euclidean, 1)
 
-    def test_nonnumeric_data(self):
-        with self.assertRaises(ValueError):
-            knn_ = kNN(np.array([0, 1, 'c']), ['a', 'b', 'c'], euclidean, 1)
+    """ Input parameter test: labels """
 
-    def test_nd_data(self):
-        knn_ = kNN(np.array([[0, 0, 0], [0, 0, 1], [0, 0, 2]]), ['a', 'b', 'c'], euclidean, 1)
+    def test_labels_dimension_mismatch(self):
+        knn_ = kNN(np.array([0, 0, 0]), ['a', 'b'], euclidean, 1)
     
     def test_null_labels(self):
         with self.assertRaises(ValueError):

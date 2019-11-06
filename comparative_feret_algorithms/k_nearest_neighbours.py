@@ -28,7 +28,7 @@ class kNN:
         if not all(isinstance(i, numbers.Number) for i in np.array(self._data).flatten()):
             raise ValueError("Data contains non-numeric values.")
 
-        if self._data.size != len(self._labels):
+        if len(self._data) != len(self._labels):
             raise ValueError("Data and labels must have the same length.")
 
         if not isinstance(self._distance, collections.Callable):

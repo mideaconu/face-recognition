@@ -3,7 +3,7 @@ import sys
 import unittest
 import numpy as np
 
-from comparative_feret_algorithms import dimensionality_reduction as dr
+from comparative_feret_algorithms.fast import dimensionality_reduction as dr
 
 rng = np.random.RandomState(42)
 data = np.dot(rng.normal(0, 1, size=(5000, 2)), np.array([[1, 0], [2, 2]]))
@@ -17,31 +17,11 @@ class PCATest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.pca = dr.PCA(None, 2)
 
-    def test_data_float(self):
-        with self.assertRaises(ValueError):
-            self.pca = dr.PCA(0., 2)
-
-    def test_data_list(self):
-        with self.assertRaises(ValueError):
-            self.pca = dr.PCA([], 2)
-
     def test_data_empty(self):
         with self.assertRaises(ValueError):
             self.pca = dr.PCA(np.array([]), 2)
 
     """ Input parameter test: n_components """
-
-    def test_n_components_float(self):
-        with self.assertRaises(ValueError):
-            self.pca = dr.PCA(data, 2.)
-
-    def test_n_components_complex(self):
-        with self.assertRaises(ValueError):
-            self.pca = dr.PCA(data, 2j)
-
-    def test_n_components_string(self):
-        with self.assertRaises(ValueError):
-            self.pca = dr.PCA(data, "a")
 
     def test_n_components_negative(self):
         with self.assertRaises(ValueError):

@@ -3,7 +3,7 @@ import sys
 import unittest
 import numpy as np
 
-from comparative_feret_algorithms import dimensionality_reduction as dr
+from comparative_feret_algorithms.fast import dimensionality_reduction as dr
 
 rng = np.random.RandomState(42)
 data = np.dot(np.concatenate((rng.normal(-7, 2, size=(5000, 2)), rng.normal(7, 2, size=(5000, 2))), axis=0), np.array([[-1, -2], [2, 1]]))
@@ -18,14 +18,6 @@ class LDATest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.lda = dr.LDA(None, [], 2)
 
-    def test_data_float(self):
-        with self.assertRaises(ValueError):
-            self.lda = dr.LDA(0., [], 2)
-
-    def test_data_list(self):
-        with self.assertRaises(ValueError):
-            self.lda = dr.LDA([], [], 2)
-
     def test_data_empty(self):
         with self.assertRaises(ValueError):
             self.lda = dr.LDA(np.array([]), [], 2)
@@ -37,18 +29,6 @@ class LDATest(unittest.TestCase):
             self.lda = dr.LDA(data, [0, 1], 2)
 
     """ Input parameter test: n_components """
-
-    def test_n_components_float(self):
-        with self.assertRaises(ValueError):
-            self.lda = dr.LDA(data, labels, 2.)
-
-    def test_n_components_complex(self):
-        with self.assertRaises(ValueError):
-            self.lda = dr.LDA(data, labels, 2j)
-
-    def test_n_components_string(self):
-        with self.assertRaises(ValueError):
-            self.lda = dr.LDA(data, labels, "a")
 
     def test_n_components_negative(self):
         with self.assertRaises(ValueError):
