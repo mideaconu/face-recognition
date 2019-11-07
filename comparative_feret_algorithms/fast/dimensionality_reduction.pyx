@@ -13,9 +13,12 @@ cdef class PCA:
     cdef _components
     cdef float _explained_variance
 
-    def __init__(self, cnp.ndarray[cnp.float64_t, ndim=2] data, int n_components):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.nonecheck(False)
+    def __init__(self, cnp.ndarray[cnp.float64_t, ndim=2] data, int n_components, solver="svd"):
 
-        if not type(data) is np.ndarray:
+        if type(data) is not np.ndarray:
             raise ValueError("Data must be a NumPy array.")
 
         if not len(data):
@@ -24,26 +27,37 @@ cdef class PCA:
         if n_components < 1 or n_components > data.shape[1]:
             raise ValueError("Invalid number of components, must be between 1 and n_features.")
 
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] _centered_data
-        cdef cnp.ndarray _eigval
-        cdef cnp.ndarray _eigvec
+        if solver not in ["eig", "svd"]:
+            raise ValueError("Unrecognised solver. Please use 'svd' or 'eig'.")
+
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] _centered_data, _U, _S, _Vt
+        cdef cnp.ndarray[cnp.long_t, ndim=1] _idx
+        cdef cnp.ndarray[cnp.float64_t, ndim=1] _s, _variance
+        cdef cnp.ndarray _eigval, _eigvec
+        cdef Py_ssize_t _n_samples = data.shape[0]
         cdef Py_ssize_t _i
 
-        _centered_data = self._center(data)
-        # Compute eigenvalues and eigenvectors of covariance matrix
-        _eigval, _eigvec, = sp.linalg.eig(np.cov(np.transpose(_centered_data)))
-        # sp.linalg.eig might return complex values, so convert them to float
-        _eigval, _eigvec = _eigval.real, _eigvec.real
-        # Test the constraint of eigenvalues and eigenvectors:
-        # _s_matrix @ _eigvec = _eigval @ _eigvec
-        np.testing.assert_allclose(np.dot(np.cov(np.transpose(_centered_data)), _eigvec), np.dot(_eigvec, np.diag(_eigval)), atol=1e-10)
-        # Order eigenvalues and eigenvectors
-        cdef cnp.ndarray[cnp.long_t, ndim=1] _idx = np.argsort(_eigval)[::-1]
-        _eigval = np.array(_eigval[_idx])
-        _eigvec = np.array([_eigvec[:,_i] for _i in _idx])
+        _centered_data = np.transpose(self._center(data))
+        if solver == "eig":
+            # Compute eigenvalues and eigenvectors of covariance matrix
+            _eigval, _eigvec, = sp.linalg.eigh(np.cov(_centered_data))
+            # sp.linalg.eig might return complex values, so convert them to float
+            _eigval, _eigvec = _eigval.real, _eigvec.real
+            # Order eigenvalues and eigenvectors
+            _idx = np.argsort(_eigval)[::-1]
+            _eigval = np.array(_eigval[_idx])
+            _eigvec = np.array([_eigvec[:,_i] for _i in _idx])
 
-        self._components = _eigvec[:n_components]
-        self._explained_variance = np.sum(_eigval[:n_components]) / np.sum(_eigval) * 100
+            self._components = _eigvec[:n_components]
+            self._explained_variance = np.sum(_eigval[:n_components]) / np.sum(_eigval) * 100
+        if solver == "svd":
+            _U, _s, _Vt = sp.linalg.svd(_centered_data)
+            _variance = (_s ** 2) / (_n_samples - 1)
+            # linalg.svd returns the singular values as an array, so convert it to a diagonal matrix
+            _S = np.diag(_s)
+
+            self._components = np.transpose(np.dot(_U[:,:n_components], _S[:n_components,:n_components]))
+            self._explained_variance = np.sum(_variance[:n_components]) / np.sum(_variance) * 100
 
     """ Data centering
     Center features by removing the mean
@@ -51,6 +65,9 @@ cdef class PCA:
     :param: Data to center
     :return: Centered data
     """
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.nonecheck(False)
     cdef cnp.ndarray[cnp.float64_t, ndim=2] _center(self, cnp.ndarray[cnp.float64_t, ndim=2] data):
         return data - np.mean(data, axis=0)
 
@@ -70,9 +87,12 @@ cdef class PCA:
 cdef class ICA:
     cdef _components
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.nonecheck(False)
     def __init__(self, cnp.ndarray[cnp.float64_t, ndim=2] data, int n_components):
 
-        if not type(data) is np.ndarray:
+        if type(data) is not np.ndarray:
             raise ValueError("Data must be a NumPy array.")
 
         if not len(data):
@@ -82,17 +102,14 @@ cdef class ICA:
             raise ValueError("Invalid number of components, must be between 1 and n_features.")
 
         cdef Py_ssize_t _n_features = data.shape[1]
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] _centered_data
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] _whitened_data
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] _whitening_matrix
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] _centered_data, _whitened_data, _whitening_matrix
         cdef cnp.ndarray[cnp.float64_t, ndim=1] _component
-        cdef cnp.ndarray _eigval
-        cdef cnp.ndarray _eigvec
+        cdef cnp.ndarray _eigval, _eigvec
         cdef Py_ssize_t _i
         cdef _components
 
         _centered_data = self._center(data)
-        _eigval, _eigvec, = sp.linalg.eig(np.cov(np.transpose(_centered_data)))
+        _eigval, _eigvec, = sp.linalg.eigh(np.cov(np.transpose(_centered_data)))
         _eigval, _eigvec = _eigval.real, _eigvec.real
         _whitening_matrix = np.dot(_eigvec, np.dot(np.diag(1 / np.sqrt(_eigval+1e-9)), np.transpose(_eigvec)))
         _whitened_data = np.dot(_centered_data, np.transpose(_whitening_matrix))
@@ -121,6 +138,9 @@ cdef class ICA:
     :param: Data to center
     :return: Centered data
     """
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.nonecheck(False)
     cdef cnp.ndarray[cnp.float64_t, ndim=2] _center(self, cnp.ndarray[cnp.float64_t, ndim=2] data):
         return data - np.mean(data, axis=0)
 
@@ -142,10 +162,12 @@ cdef class ICA:
     :param W: Existing independent components
     :return: New indendent component
     """
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.nonecheck(False)
     cdef cnp.ndarray[cnp.float64_t, ndim=1] _compute_unit(self, cnp.ndarray[cnp.float64_t, ndim=2] X, W):
         cdef cnp.ndarray[cnp.float64_t, ndim=1] w = np.random.rand(X.shape[0])
-        cdef cnp.ndarray[cnp.float64_t, ndim=1] _w
-        cdef cnp.ndarray[cnp.float64_t, ndim=1] w0 
+        cdef cnp.ndarray[cnp.float64_t, ndim=1] _w, w0 
         cdef Py_ssize_t _iter
 
         w /= np.linalg.norm(w)
@@ -175,9 +197,12 @@ cdef class LDA:
     cdef _components
     cdef _W
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.nonecheck(False)
     def __init__(self, cnp.ndarray[cnp.float64_t, ndim=2] data, labels, int n_dimensions):
 
-        if not type(data) is np.ndarray:
+        if type(data) is not np.ndarray:
             raise ValueError("Data must be a NumPy array.")
 
         if not len(data):
@@ -189,13 +214,11 @@ cdef class LDA:
         if n_dimensions < 1 or n_dimensions > data.shape[1]:
             raise ValueError("Invalid number of components, must be between 1 and n_features.")
 
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] _S_b
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] _S_w
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] _S_b, _S_w
         cdef cnp.ndarray[cnp.float64_t, ndim=1] _t_mean
-        cdef cnp.ndarray _eigval
-        cdef cnp.ndarray _eigvec
-        cdef _c_means
-        cdef _c_sizes
+        cdef cnp.ndarray[cnp.long_t, ndim=1] _idx
+        cdef cnp.ndarray _eigval, _eigvec
+        cdef _c_means, _c_sizes
 
         _c_means, _c_sizes = self._class_means(data, labels)
         _t_mean = np.array(list(_c_means.values())).mean(axis=0)
@@ -203,11 +226,13 @@ cdef class LDA:
         _S_w = self._within_class(data, labels, _c_means)
         self._W = np.dot(np.linalg.inv(_S_w), _S_b)
 
-        _eigval, _eigvec, = np.linalg.eig(np.cov(self._W))
-        # Test the constraint of eigenvalues and eigenvectors:
-        # _s_matrix @ _eigvec = _eigval @ _eigvec
-        np.testing.assert_allclose(np.dot(np.cov(self._W), _eigvec), np.dot(_eigvec, np.diag(_eigval)), atol=1e-10)
-        #self._eigval, self._eigvec = order_eig(self._eigval, self._eigvec)
+        _eigval, _eigvec, = np.linalg.eigh(np.cov(self._W))
+        # sp.linalg.eig might return complex values, so convert them to float
+        _eigval, _eigvec = _eigval.real, _eigvec.real    
+        # Order eigenvalues and eigenvectors
+        _idx = np.argsort(_eigval)[::-1]
+        _eigval = np.array(_eigval[_idx])
+        _eigvec = np.array([_eigvec[:,_i] for _i in _idx])
 
         self._components = _eigvec[:n_dimensions]
 
@@ -218,6 +243,9 @@ cdef class LDA:
     :return means: Dictionary of class:mean entries
     :return c_sizes: List of class sizes
     """
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.nonecheck(False)
     cdef tuple _class_means(self, data, labels):
         c_means = dict((class_, np.zeros(data.shape[1])) for class_ in set(labels))
         c_sizes = dict((class_, 0) for class_ in set(labels))
@@ -234,6 +262,9 @@ cdef class LDA:
     :param t_mean: Total mean
     :return: Between-class matrix
     """
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.nonecheck(False)
     cdef cnp.ndarray[cnp.float64_t, ndim=2] _between_class(self, c_means, c_sizes, t_mean):
         S_b = np.zeros((len(t_mean), len(t_mean)))
         for class_ in c_means.keys():
@@ -247,6 +278,9 @@ cdef class LDA:
     :param c_means: List of class means
     :return: Within-class matrix
     """
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.nonecheck(False)
     cdef cnp.ndarray[cnp.float64_t, ndim=2] _within_class(self, data, labels, c_means):
         data = np.array([data[i] - c_means[labels[i]] for i in range(data.shape[0])])
         S_w = np.zeros((data.shape[1], data.shape[1]))

@@ -5,7 +5,8 @@ from setuptools import setup, find_packages
 from distutils.extension import Extension
 from Cython.Build import cythonize
 
-extension = [Extension(name="comparative_feret_algorithms.fast.dimensionality_reduction", sources=["comparative_feret_algorithms/fast/dimensionality_reduction.pyx"], include_dirs=[numpy.get_include()])]
+extension = [Extension(name="comparative_feret_algorithms.fast.dimensionality_reduction", sources=["comparative_feret_algorithms/fast/dimensionality_reduction.pyx"], include_dirs=[numpy.get_include()]),
+             Extension(name="comparative_feret_algorithms.fast.k_nearest_neighbours", sources=["comparative_feret_algorithms/fast/k_nearest_neighbours.pyx"], include_dirs=[numpy.get_include()])]
 
 setup(
     name="comparative_feret_algorithms",
