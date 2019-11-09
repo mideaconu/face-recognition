@@ -17,16 +17,12 @@ class kNN:
         self._data = data
         self._labels = labels
         self._distance = distance
-        self._ball_tree = None
 
         if not isinstance(self._labels, np.ndarray):
             raise ValueError("Labels must be in the form of aNumPy array.")
 
         if self._data.size == 0:
             raise ValueError("Data cannot be empty.")
-
-        if not all(isinstance(i, numbers.Number) for i in np.array(self._data).flatten()):
-            raise ValueError("Data contains non-numeric values.")
 
         if len(self._data) != len(self._labels):
             raise ValueError("Data and labels must have the same length.")

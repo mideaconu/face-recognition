@@ -56,7 +56,7 @@ cdef class PCA:
             # linalg.svd returns the singular values as an array, so convert it to a diagonal matrix
             _S = np.diag(_s)
 
-            self._components = np.transpose(np.dot(_U[:,:n_components], _S[:n_components,:n_components]))
+            self._components = _U[:,:n_components]
             self._explained_variance = np.sum(_variance[:n_components]) / np.sum(_variance) * 100
 
     """ Data centering
@@ -111,14 +111,14 @@ cdef class ICA:
         _centered_data = self._center(data)
         _eigval, _eigvec, = sp.linalg.eigh(np.cov(np.transpose(_centered_data)))
         _eigval, _eigvec = _eigval.real, _eigvec.real
-        _whitening_matrix = np.dot(_eigvec, np.dot(np.diag(1 / np.sqrt(_eigval+1e-9)), np.transpose(_eigvec)))
+        _whitening_matrix = np.dot(_eigvec, np.dot(np.diag(1 / np.sqrt(_eigval+1e-10)), np.transpose(_eigvec)))
         _whitened_data = np.dot(_centered_data, np.transpose(_whitening_matrix))
         # Test the constraint of the whitened data:
         # cov(X @ W) = I
-        np.testing.assert_allclose(np.cov(np.transpose(_whitened_data)), np.eye(_n_features), atol=1e-10)
+        np.testing.assert_allclose(np.cov(np.transpose(_whitened_data)), np.eye(_n_features), atol=1e-7)
         # Test the constraint of the whitening matrix:
         # W^T @ W = cov(X)^-1
-        np.testing.assert_allclose(np.linalg.inv(np.cov(np.transpose(data))), np.dot(np.transpose(_whitening_matrix), _whitening_matrix), atol=1e-10)
+        np.testing.assert_allclose(np.linalg.inv(np.cov(np.transpose(data))), np.dot(np.transpose(_whitening_matrix), _whitening_matrix), atol=1e-7)
 
         _whitened_data = np.transpose(_whitened_data)
         _components = []
@@ -128,7 +128,7 @@ cdef class ICA:
         _components = np.vstack(_components)
         # Test for independence of the components:
         # S^T @ S = I
-        np.testing.assert_allclose(np.dot(np.transpose(_components), _components), np.eye(_n_features), atol=1e-10)
+        np.testing.assert_allclose(np.dot(np.transpose(_components), _components), np.eye(_n_features), atol=1e-7)
 
         self._components = np.dot(_components, _whitening_matrix)
 
@@ -171,7 +171,7 @@ cdef class ICA:
         cdef Py_ssize_t _iter
 
         w /= np.linalg.norm(w)
-        for _iter in range(5000):
+        for _iter in range(1000):
             w0 = w
             w = (1 / X.shape[1]-1) * np.dot(X, self._g(np.dot(np.transpose(w), X))) - (1 / X.shape[1]-1) * np.dot(self._dg(np.dot(np.transpose(w), X)), np.ones((X.shape[1], 1))) * w
             for w_ in W:
@@ -210,9 +210,6 @@ cdef class LDA:
 
         if len(data) != len(labels):
             raise ValueError("Data and labels must have the same length.")
-
-        if n_dimensions < 1 or n_dimensions > data.shape[1]:
-            raise ValueError("Invalid number of components, must be between 1 and n_features.")
 
         cdef cnp.ndarray[cnp.float64_t, ndim=2] _S_b, _S_w
         cdef cnp.ndarray[cnp.float64_t, ndim=1] _t_mean

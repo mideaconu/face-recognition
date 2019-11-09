@@ -97,8 +97,7 @@ class ICA:
     :return W: Whitening matrix
     """
     def _whiten(self, data):
-        data = self._center(data)
-        eigval, eigvec, = np.linalg.eig(np.cov(np.transpose(data)))
+        eigval, eigvec, = np.linalg.eigh(np.cov(np.transpose(data)))
         W = np.dot(eigvec, np.dot(np.diag(1 / np.sqrt(eigval+1e-9)), np.transpose(eigvec)))
         data_w = np.dot(data, np.transpose(W))
         return data_w, W
@@ -170,9 +169,6 @@ class LDA:
 
         if not isinstance(n_dimensions, int):
             raise ValueError("Number of components must be an integer.")
-
-        if n_dimensions < 1 or n_dimensions > data.shape[1]:
-            raise ValueError("Invalid number of components, must be between 1 and n_features.")
 
         _c_means, _c_sizes = self._class_means(data, labels)
         _t_mean = np.array(list(_c_means.values())).mean(axis=0)
