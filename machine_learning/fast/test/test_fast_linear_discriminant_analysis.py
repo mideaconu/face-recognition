@@ -3,7 +3,7 @@ import sys
 import unittest
 import numpy as np
 
-from comparative_feret_algorithms.fast import dimensionality_reduction as dr
+from machine_learning.fast import dimensionality_reduction as dr
 
 rng = np.random.RandomState(42)
 data = np.dot(np.concatenate((rng.normal(-7, 2, size=(5000, 2)), rng.normal(7, 2, size=(5000, 2))), axis=0), np.array([[-1, -2], [2, 1]]))

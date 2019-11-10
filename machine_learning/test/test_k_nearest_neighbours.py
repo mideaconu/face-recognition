@@ -4,7 +4,7 @@ import unittest
 import collections
 import numpy as np
 
-from comparative_feret_algorithms import k_nearest_neighbours as knn
+from machine_learning import k_nearest_neighbours as knn
 
 def euclidean(a, b):
     return np.linalg.norm(a - b)
