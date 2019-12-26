@@ -72,9 +72,9 @@ cdef class PCA:
                 # Perform QR decompotision on (A @ At)^q @ A @ Omega
                 _Q = _Omega
                 for __ in range(self._n_iter):
-                    _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q), mode='economic')
-                    _Q, __ = np.linalg.qr(np.dot(np.transpose(_centered_data), _Q), mode='economic')
-                _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q), mode='economic')
+                    _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q))
+                    _Q, __ = np.linalg.qr(np.dot(np.transpose(_centered_data), _Q))
+                _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q))
                 # Compute low-dimensional A
                 _B = np.dot(np.transpose(_Q), _centered_data)
                 _Uh, _s, __ = sp.linalg.svd(_B)
