@@ -19,7 +19,7 @@ cdef class PCA:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def __cinit__(self, int n_components, str solver="svd", int n_oversamples=10, int n_iter=2):
+    def __cinit__(self, int n_components, str solver="svd", int n_oversamples=10, int n_iter=4):
         self._n_components = n_components
         self._solver = solver
         self._n_oversamples = n_oversamples
