@@ -60,6 +60,7 @@ cdef class PCA:
 
             if max(_n_samples, _n_features) < 500 or self._n_components > .8 * min(_n_samples, _n_features):
 
+                print("full")
                 _U, _s, __ = sp.linalg.svd(_centered_data)
                 _variance = (_s ** 2) / (_n_samples - 1)
 
@@ -68,6 +69,7 @@ cdef class PCA:
 
             else:
 
+                print("randomised")
                 _n_dimensions = self._n_components + self._n_oversamples
                 # Sample (k + p) i.i.d. vectors from a normal distribution
                 _Omega = np.random.normal(size=(_n_features, _n_dimensions))
