@@ -73,9 +73,9 @@ cdef class PCA:
                 _Omega = np.random.normal(size=(_n_features, _n_dimensions))
                 # Perform QR decompotision on (A @ At)^q @ A @ Omega
                 for __ in range(self._n_iter):
-                    _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q), mode='economic')
-                    _Q, __ = np.linalg.qr(np.dot(np.transpose(_centered_data), _Q), mode='economic')
-                _Q, __ = np.linalg.qr(np.dot(_centered_data, _Omega), mode='economic')
+                    _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q))
+                    _Q, __ = np.linalg.qr(np.dot(np.transpose(_centered_data), _Q))
+                _Q, __ = np.linalg.qr(np.dot(_centered_data, _Omega))
 
     """ Data centering
     Center features by removing the mean
