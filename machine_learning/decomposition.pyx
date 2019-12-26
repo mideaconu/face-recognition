@@ -58,20 +58,11 @@ cdef class PCA:
 
         elif self._solver == "svd":
 
-            if max(_n_samples, _n_features) < 500 or self._n_components > .8 * min(_n_samples, _n_features):
+            _U, _s, __ = sp.linalg.svd(_centered_data)
+            _variance = (_s ** 2) / (_n_samples - 1)
 
-                _U, _s, __ = sp.linalg.svd(_centered_data)
-                _variance = (_s ** 2) / (_n_samples - 1)
-
-                self._components = _U[:,:self._n_components]
-                self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
-
-            else:
-
-                _n_dimensions = self._n_components + self._n_oversamples
-                # Sample (k + p) i.i.d. vectors from a normal distribution
-                _Omega = np.random.normal(size=(_n_features, _n_dimensions))
-                # Perform QR decompotision on (A @ At)^q @ A @ Omega
+            self._components = _U[:,:self._n_components]
+            self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
 
     """ Data centering
     Center features by removing the mean
