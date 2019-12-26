@@ -71,24 +71,11 @@ cdef class PCA:
                 _n_dimensions = self._n_components + self._n_oversamples
                 # Sample (k + p) i.i.d. vectors from a normal distribution
                 _Omega = np.random.normal(size=(_n_features, _n_dimensions))
-                print("done Omega")
                 # Perform QR decompotision on (A @ At)^q @ A @ Omega
                 for __ in range(self._n_iter):
                     _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q), mode='economic')
                     _Q, __ = np.linalg.qr(np.dot(np.transpose(_centered_data), _Q), mode='economic')
                 _Q, __ = np.linalg.qr(np.dot(_centered_data, _Omega), mode='economic')
-                print("done Q")
-                del _Omega
-                # Compute low-dimensional A
-                _B = np.dot(np.transpose(_Q), _centered_data)
-                _Uh, _s, __ = sp.linalg.svd(_B)
-                del _B
-                _variance = (_s ** 2) / (_n_samples - 1)
-                _U = np.dot(_Q, _Uh)
-                del _Q, _Uh
-
-                self._components = _U[:,:self._n_components]
-                self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
 
     """ Data centering
     Center features by removing the mean
