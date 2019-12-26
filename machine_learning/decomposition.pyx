@@ -42,7 +42,11 @@ cdef class PCA:
         cdef Py_ssize_t _i
         cdef int _n_dimensions
 
+        print("a")
+
         if self._solver == "eig":
+
+            print("b")
 
             # Compute eigenvalues and eigenvectors of covariance matrix
             _eigval, _eigvec, = sp.linalg.eigh(np.cov(_centered_data))
@@ -52,7 +56,6 @@ cdef class PCA:
             _idx = np.argsort(_eigval)[::-1]
             _eigval = np.array(_eigval[_idx])
             _eigvec = np.array([_eigvec[:,_i] for _i in _idx])
-
             self._components = _eigvec[:self._n_components]
             self._explained_variance = np.sum(_eigval[:self._n_components]) / np.sum(_eigval) * 100
 
@@ -62,16 +65,15 @@ cdef class PCA:
 
             if max(_n_samples, _n_features) < 500 or self._n_components > .8 * min(_n_samples, _n_features):
 
-                print("full")
+                print(_n_samples)
                 _U, _s, __ = sp.linalg.svd(_centered_data)
                 _variance = (_s ** 2) / (_n_samples - 1)
-
                 self._components = _U[:,:self._n_components]
                 self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
 
             else:
 
-                print("randomised")
+                print(_n_features)
                 _n_dimensions = self._n_components + self._n_oversamples
                 # Sample (k + p) i.i.d. vectors from a normal distribution
                 _Omega = np.random.normal(size=(_n_features, _n_dimensions))
@@ -80,15 +82,11 @@ cdef class PCA:
                     _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q), mode='economic')
                     _Q, __ = np.linalg.qr(np.dot(np.transpose(_centered_data), _Q), mode='economic')
                 _Q, __ = np.linalg.qr(np.dot(_centered_data, _Omega), mode='economic')
-                del _Omega
                 # Compute low-dimensional A
                 _B = np.dot(np.transpose(_Q), _centered_data)
                 _Uh, _s, __ = sp.linalg.svd(_B)
-                del _B
                 _variance = (_s ** 2) / (_n_samples - 1)
                 _U = np.dot(_Q, _Uh)
-                del _Q, _Uh
-
                 self._components = _U[:,:self._n_components]
                 self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
 
