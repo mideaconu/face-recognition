@@ -12,14 +12,18 @@ cdef class PCA:
 
     cdef int _n_components
     cdef str _solver
+    cdef int _n_oversamples
+    cdef int _n_iter
     cdef _components
     cdef float _explained_variance
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def __cinit__(self, int n_components, str solver="svd"):
+    def __cinit__(self, int n_components, str solver="svd", int n_oversamples=10, int n_iter=2):
         self._n_components = n_components
         self._solver = solver
+        self._n_oversamples = n_oversamples
+        self._n_iter = n_iter
 
     """ Fit the model to the data
     Compute the principal components and total explained variance
@@ -30,12 +34,13 @@ cdef class PCA:
     def fit(self, cnp.ndarray[cnp.float64_t, ndim=2] data):
 
         cdef cnp.ndarray[cnp.float64_t, ndim=2] _centered_data = self._center(np.transpose(data))
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] _U, _S, _Vt
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] _U, _Uh, _S, _Vt, _Omega, _Q, _B
         cdef cnp.ndarray[cnp.float64_t, ndim=1] _s, _variance
         cdef cnp.ndarray[cnp.long_t, ndim=1] _idx
         cdef cnp.ndarray _eigval, _eigvec
-        cdef Py_ssize_t _n_samples = data.shape[0]
+        cdef Py_ssize_t _n_samples = _centered_data.shape[0], _n_features = _centered_data.shape[1]
         cdef Py_ssize_t _i
+        cdef int _n_dimensions
 
         if self._solver == "eig":
 
@@ -53,13 +58,37 @@ cdef class PCA:
 
         elif self._solver == "svd":
 
-            _U, _s, _Vt = sp.linalg.svd(_centered_data)
-            _variance = (_s ** 2) / (_n_samples - 1)
-            # linalg.svd returns the singular values as an array, so convert it to a diagonal matrix
-            _S = np.diag(_s)
+            if max(_n_samples, _n_features) < 500 or self._n_components > .8 * min(_n_samples, _n_features):
 
-            self._components = _U[:,:self._n_components]
-            self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
+                _U, _s, __ = sp.linalg.svd(_centered_data)
+                _variance = (_s ** 2) / (_n_samples - 1)
+
+                self._components = _U[:,:self._n_components]
+                self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
+
+            else:
+
+                _n_dimensions = self._n_components + self._n_oversamples
+                # Sample (k + p) i.i.d. vectors from a normal distribution
+                _Omega = np.random.normal(size=(_n_features, _n_dimensions))
+                print("done Omega")
+                # Perform QR decompotision on (A @ At)^q @ A @ Omega
+                for __ in range(self._n_iter):
+                    _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q), mode='economic')
+                    _Q, __ = np.linalg.qr(np.dot(np.transpose(_centered_data), _Q), mode='economic')
+                _Q, __ = np.linalg.qr(np.dot(_centered_data, _Omega), mode='economic')
+                print("done Q")
+                del _Omega
+                # Compute low-dimensional A
+                _B = np.dot(np.transpose(_Q), _centered_data)
+                _Uh, _s, __ = sp.linalg.svd(_B)
+                del _B
+                _variance = (_s ** 2) / (_n_samples - 1)
+                _U = np.dot(_Q, _Uh)
+                del _Q, _Uh
+
+                self._components = _U[:,:self._n_components]
+                self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
 
     """ Data centering
     Center features by removing the mean
