@@ -58,7 +58,7 @@ cdef class PCA:
 
         elif self._solver == "svd":
 
-            _U, _s, __ = sp.linalg.svd(_centered_data)
+            _U, _s, _Vt = sp.linalg.svd(_centered_data)
             _variance = (_s ** 2) / (_n_samples - 1)
 
             self._components = _U[:,:self._n_components]
