@@ -58,6 +58,8 @@ cdef class PCA:
 
         elif self._solver == "svd":
 
+            print("svd")
+
             if max(_n_samples, _n_features) < 500 or self._n_components > .8 * min(_n_samples, _n_features):
 
                 print("full")
