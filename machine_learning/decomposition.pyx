@@ -42,11 +42,7 @@ cdef class PCA:
         cdef Py_ssize_t _i
         cdef int _n_dimensions
 
-        print("a")
-
         if self._solver == "eig":
-
-            print("b")
 
             # Compute eigenvalues and eigenvectors of covariance matrix
             _eigval, _eigvec, = sp.linalg.eigh(np.cov(_centered_data))
@@ -61,34 +57,21 @@ cdef class PCA:
 
         elif self._solver == "svd":
 
-            print("svd")
-
-            if max(_n_samples, _n_features) < 500 or self._n_components > .8 * min(_n_samples, _n_features):
-
-                print(_n_samples)
-                _U, _s, __ = sp.linalg.svd(_centered_data)
-                _variance = (_s ** 2) / (_n_samples - 1)
-                self._components = _U[:,:self._n_components]
-                self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
-
-            else:
-
-                print(_n_features)
-                _n_dimensions = self._n_components + self._n_oversamples
-                # Sample (k + p) i.i.d. vectors from a normal distribution
-                _Omega = np.random.normal(size=(_n_features, _n_dimensions))
-                # Perform QR decompotision on (A @ At)^q @ A @ Omega
-                for __ in range(self._n_iter):
-                    _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q), mode='economic')
-                    _Q, __ = np.linalg.qr(np.dot(np.transpose(_centered_data), _Q), mode='economic')
-                _Q, __ = np.linalg.qr(np.dot(_centered_data, _Omega), mode='economic')
-                # Compute low-dimensional A
-                _B = np.dot(np.transpose(_Q), _centered_data)
-                _Uh, _s, __ = sp.linalg.svd(_B)
-                _variance = (_s ** 2) / (_n_samples - 1)
-                _U = np.dot(_Q, _Uh)
-                self._components = _U[:,:self._n_components]
-                self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
+            _n_dimensions = self._n_components + self._n_oversamples
+            # Sample (k + p) i.i.d. vectors from a normal distribution
+            _Omega = np.random.normal(size=(_n_features, _n_dimensions))
+            # Perform QR decompotision on (A @ At)^q @ A @ Omega
+            for __ in range(self._n_iter):
+                _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q), mode='economic')
+                _Q, __ = np.linalg.qr(np.dot(np.transpose(_centered_data), _Q), mode='economic')
+            _Q, __ = np.linalg.qr(np.dot(_centered_data, _Omega), mode='economic')
+            # Compute low-dimensional A
+            _B = np.dot(np.transpose(_Q), _centered_data)
+            _Uh, _s, __ = sp.linalg.svd(_B)
+            _variance = (_s ** 2) / (_n_samples - 1)
+            _U = np.dot(_Q, _Uh)
+            self._components = _U[:,:self._n_components]
+            self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
 
     """ Data centering
     Center features by removing the mean
