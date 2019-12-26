@@ -59,7 +59,6 @@ cdef class PCA:
 
             if max(_n_samples, _n_features) < 500 or self._n_components > .8 * min(_n_samples, _n_features):
 
-                print("full")
                 _U, _s, __ = sp.linalg.svd(_centered_data)
                 _variance = (_s ** 2) / (_n_samples - 1)
                 self._components = _U[:,:self._n_components]
@@ -67,15 +66,15 @@ cdef class PCA:
 
             else:
 
-                print("randomised")
                 _n_dimensions = self._n_components + self._n_oversamples
                 # Sample (k + p) i.i.d. vectors from a normal distribution
                 _Omega = np.random.normal(size=(_n_features, _n_dimensions))
                 # Perform QR decompotision on (A @ At)^q @ A @ Omega
+                _Q = _Omega
                 for __ in range(self._n_iter):
-                    _Q, __ = np.linalg.qr(_centered_data), mode='economic')
+                    _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q), mode='economic')
                     _Q, __ = np.linalg.qr(np.dot(np.transpose(_centered_data), _Q), mode='economic')
-                _Q, __ = np.linalg.qr(np.dot(_centered_data, _Omega), mode='economic')
+                _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q), mode='economic')
                 # Compute low-dimensional A
                 _B = np.dot(np.transpose(_Q), _centered_data)
                 _Uh, _s, __ = sp.linalg.svd(_B)
