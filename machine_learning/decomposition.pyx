@@ -5,7 +5,7 @@ cimport cython
 
 
 """ Principal Component Analysis (PCA)
-:param data: NumPy dataset to perform PCA on (n_samples x n_features)
+:param data: Non-sparse dataset in NumPy ndarray format (n_samples x n_features)
 :param n_components: Number of principal components to be selected
 """
 cdef class PCA:
@@ -19,13 +19,13 @@ cdef class PCA:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def __cinit__(self, int n_components, str solver="svd", int n_oversamples=10, int n_iter=2):
+    def __cinit__(self, int n_components, str solver="svd", int n_oversamples=10, int n_iter=2): # hyperparameters recommended in Erichson et al. 2019
         self._n_components = n_components
         self._solver = solver
         self._n_oversamples = n_oversamples
         self._n_iter = n_iter
 
-    """ Fit the model to the data
+    """ Fit the model
     Compute the principal components and total explained variance
     :param: Data
     """
@@ -57,6 +57,7 @@ cdef class PCA:
 
         elif self._solver == "svd":
 
+            # Full SVD
             if max(_n_samples, _n_features) < 500 or self._n_components > .8 * min(_n_samples, _n_features):
 
                 _U, _s, __ = sp.linalg.svd(_centered_data)
@@ -64,17 +65,17 @@ cdef class PCA:
                 self._components = _U[:,:self._n_components]
                 self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
 
+            # Randomised SVD
             else:
 
                 _n_dimensions = self._n_components + self._n_oversamples
                 # Sample (k + p) i.i.d. vectors from a normal distribution
                 _Omega = np.random.normal(size=(_n_features, _n_dimensions))
                 # Perform QR decompotision on (A @ At)^q @ A @ Omega
-                _Q = _Omega
+                _Q, __ = np.linalg.qr(np.dot(_centered_data, _Omega))
                 for __ in range(self._n_iter):
-                    _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q))
                     _Q, __ = np.linalg.qr(np.dot(np.transpose(_centered_data), _Q))
-                _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q))
+                    _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q))
                 # Compute low-dimensional A
                 _B = np.dot(np.transpose(_Q), _centered_data)
                 _Uh, _s, __ = sp.linalg.svd(_B)
