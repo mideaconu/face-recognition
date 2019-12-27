@@ -14,12 +14,32 @@ cdef class PCA:
     cdef str _solver
     cdef int _n_oversamples
     cdef int _n_iter
+
     cdef _components
     cdef float _explained_variance
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def __cinit__(self, int n_components, str solver="svd", int n_oversamples=10, int n_iter=2): # hyperparameters recommended in Erichson et al. 2019
+
+        if not isinstance(n_components, int):
+            raise TypeError("Number of components must be an integer.")
+        if n_components <= 0:
+            raise ValueError("Number of components must be positive.")
+
+        if solver not in ["svd", "eig"]:
+            raise ValueError("Solver must be either 'svd' or 'eig'.")
+
+        if not isinstance(n_oversamples, int):
+            raise TypeError("Number of oversamples must be an integer.")
+        if n_oversamples <= 0:
+            raise ValueError("Number of oversamples must be positive.")
+
+        if not isinstance(n_iter, int):
+            raise TypeError("Number of power iterations must be an integer.")
+        if n_iter <= 0:
+            raise ValueError("Number of iterations must be positive.")
+
         self._n_components = n_components
         self._solver = solver
         self._n_oversamples = n_oversamples
@@ -32,6 +52,11 @@ cdef class PCA:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def fit(self, cnp.ndarray[cnp.float64_t, ndim=2] data):
+
+        if len(data) == 0:
+            raise ValueError("Data cannot be empty.")
+        if self._n_components >= data.shape[1]:
+            raise ValueError("Number of components must be smaller than the number of features.")
 
         cdef cnp.ndarray[cnp.float64_t, ndim=2] _centered_data = self._center(np.transpose(data))
         cdef cnp.ndarray[cnp.float64_t, ndim=2] _U, _Uh, _S, _Vt, _Omega, _Q, _B
@@ -52,35 +77,40 @@ cdef class PCA:
             _idx = np.argsort(_eigval)[::-1]
             _eigval = np.array(_eigval[_idx])
             _eigvec = np.array([_eigvec[:,_i] for _i in _idx])
+
             self._components = _eigvec[:self._n_components]
             self._explained_variance = np.sum(_eigval[:self._n_components]) / np.sum(_eigval) * 100
 
         elif self._solver == "svd":
 
-            # Full SVD
-            if max(_n_samples, _n_features) < 500 or self._n_components > .8 * min(_n_samples, _n_features):
+            if max(_n_samples, _n_features) < 500 or self._n_components > .8 * min(_n_samples, _n_features): # full SVD
 
                 _U, _s, __ = sp.linalg.svd(_centered_data)
                 _variance = (_s ** 2) / (_n_samples - 1)
+
                 self._components = _U[:,:self._n_components]
                 self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
 
-            # Randomised SVD
-            else:
+            else: # randomised SVD
 
                 _n_dimensions = self._n_components + self._n_oversamples
                 # Sample (k + p) i.i.d. vectors from a normal distribution
                 _Omega = np.random.normal(size=(_n_features, _n_dimensions))
                 # Perform QR decompotision on (A @ At)^q @ A @ Omega
-                _Q, __ = np.linalg.qr(np.dot(_centered_data, _Omega))
+                _Q = _Omega
                 for __ in range(self._n_iter):
-                    _Q, __ = np.linalg.qr(np.dot(np.transpose(_centered_data), _Q))
                     _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q))
-                # Compute low-dimensional A
+                    _Q, __ = np.linalg.qr(np.dot(np.transpose(_centered_data), _Q))
+                _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q))
+
+                # Compute low-dimensional B
                 _B = np.dot(np.transpose(_Q), _centered_data)
+
+                # Find principal components of B
                 _Uh, _s, __ = sp.linalg.svd(_B)
                 _variance = (_s ** 2) / (_n_samples - 1)
                 _U = np.dot(_Q, _Uh)
+
                 self._components = _U[:,:self._n_components]
                 self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
 
@@ -95,12 +125,58 @@ cdef class PCA:
         return data - np.mean(data, axis=0)
 
     @property
+    def n_components(self):       
+        return self._n_components
+
+    @property
+    def solver(self):       
+        return self._solver
+
+    @property
+    def n_oversamples(self):       
+        return self._n_oversamples
+
+    @property
+    def n_iter(self):       
+        return self._n_iter
+
+    @property
     def components(self):       
         return self._components
 
     @property
     def explained_variance(self):
         return self._explained_variance
+
+    @n_components.setter
+    def n_components(self, int n_components):
+        if not isinstance(n_components, int):
+            raise TypeError("Number of components must be an integer.")
+        if n_components <= 0:
+            raise ValueError("Number of components must be positive.")
+        self._n_components = n_components
+
+    @solver.setter
+    def solver(self, str solver):
+        if solver not in ["svd", "eig"]:
+            raise ValueError("Solver must be either 'svd' or 'eig'.")
+        self._solver = solver
+
+    @n_oversamples.setter
+    def n_oversamples(self, int n_oversamples):
+        if not isinstance(n_oversamples, int):
+            raise TypeError("Number of oversamples must be an integer.")
+        if n_oversamples <= 0:
+            raise ValueError("Number of oversamples must be positive.")
+        self._n_oversamples = n_oversamples
+
+    @n_iter.setter
+    def n_iter(self, int n_iter):
+        if not isinstance(n_iter, int):
+            raise TypeError("Number of power iterations must be an integer.")
+        if n_iter <= 0:
+            raise ValueError("Number of iterations must be positive.")
+        self._n_iter = n_iter
 
 
 """ Independent Component Analysis (ICA)
