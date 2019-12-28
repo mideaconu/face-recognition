@@ -56,7 +56,7 @@ cdef class PCA:
         if len(data) == 0:
             raise ValueError("Data cannot be empty.")
         if self._n_components >= data.shape[1]:
-            raise ValueError("Number of components must be smaller than the number of features.")
+            raise ValueError("Number of components must be smaller than the number of features in the data.")
 
         cdef cnp.ndarray[cnp.float64_t, ndim=2] centered_data = self._center(np.transpose(data))
         cdef cnp.ndarray[cnp.float64_t, ndim=2] U, Uh, S, Vt, Omega, Q, B
@@ -245,6 +245,7 @@ cdef class ICA:
             # Test for independence of the components:
             # S^T @ S = I
             np.testing.assert_allclose(np.dot(np.transpose(components_), components_), np.eye(n_features), atol=1e-7)
+
             self._components = np.dot(components_, whitening_matrix)
 
         elif self._method == "symmetric":
@@ -252,6 +253,7 @@ cdef class ICA:
             # Test for independence of the components:
             # S^T @ S = I
             np.testing.assert_allclose(np.dot(np.transpose(components), components), np.eye(n_features), atol=1e-7)
+
             self._components = np.dot(components, whitening_matrix)
 
     """ Data centering
@@ -307,7 +309,7 @@ cdef class ICA:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cdef cnp.ndarray[cnp.float64_t, ndim=1] _compute_matrix(self, cnp.ndarray[cnp.float64_t, ndim=2] X):
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] W = np.random.rand(size=(X.shape[0], self._n_components)), W0
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] W = np.random.rand(X.shape[0], self._n_components), W0
         cdef Py_ssize_t i
 
         # Normalise component vectors in W
