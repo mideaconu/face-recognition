@@ -11,7 +11,7 @@ cimport cython
 cdef class PCA:
 
     cdef int _n_components
-    cdef str _solver
+    cdef str _method
     cdef int _n_oversamples
     cdef int _n_iter
 
@@ -20,15 +20,15 @@ cdef class PCA:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def __cinit__(self, int n_components, str solver="svd", int n_oversamples=10, int n_iter=2): # hyperparameters recommended in Erichson et al. 2019
+    def __cinit__(self, int n_components, str method="svd", int n_oversamples=10, int n_iter=2): # hyperparameters recommended in Erichson et al. 2019
 
         if not isinstance(n_components, int):
             raise TypeError("Number of components must be an integer.")
         if n_components <= 0:
             raise ValueError("Number of components must be positive.")
 
-        if solver not in ["svd", "eig"]:
-            raise ValueError("Solver must be either 'svd' or 'eig'.")
+        if method not in ["svd", "eig"]:
+            raise ValueError("method must be either 'svd' or 'eig'.")
 
         if not isinstance(n_oversamples, int):
             raise TypeError("Number of oversamples must be an integer.")
@@ -41,7 +41,7 @@ cdef class PCA:
             raise ValueError("Number of iterations must be positive.")
 
         self._n_components = n_components
-        self._solver = solver
+        self._method = method
         self._n_oversamples = n_oversamples
         self._n_iter = n_iter
 
@@ -58,65 +58,68 @@ cdef class PCA:
         if self._n_components >= data.shape[1]:
             raise ValueError("Number of components must be smaller than the number of features.")
 
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] _centered_data = self._center(np.transpose(data))
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] _U, _Uh, _S, _Vt, _Omega, _Q, _B
-        cdef cnp.ndarray[cnp.float64_t, ndim=1] _s, _variance
-        cdef cnp.ndarray[cnp.long_t, ndim=1] _idx
-        cdef cnp.ndarray _eigval, _eigvec
-        cdef Py_ssize_t _n_samples = _centered_data.shape[0], _n_features = _centered_data.shape[1]
-        cdef Py_ssize_t _i
-        cdef int _n_dimensions
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] centered_data = self._center(np.transpose(data))
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] U, Uh, S, Vt, Omega, Q, B
+        cdef cnp.ndarray[cnp.float64_t, ndim=1] s, variance
+        cdef cnp.ndarray[cnp.long_t, ndim=1] idx
+        cdef cnp.ndarray eigval, eigvec
 
-        if self._solver == "eig":
+        cdef Py_ssize_t n_samples = centered_data.shape[0], n_features = centered_data.shape[1]
+        cdef Py_ssize_t i
+
+        cdef int n_dimensions
+
+        if self._method == "eig":
 
             # Compute eigenvalues and eigenvectors of covariance matrix
-            _eigval, _eigvec, = sp.linalg.eigh(np.cov(_centered_data))
+            eigval, eigvec, = sp.linalg.eigh(np.cov(centered_data))
             # sp.linalg.eig might return complex values, so convert them to float
-            _eigval, _eigvec = _eigval.real, _eigvec.real
+            eigval, eigvec = eigval.real, eigvec.real
+
             # Order eigenvalues and eigenvectors
-            _idx = np.argsort(_eigval)[::-1]
-            _eigval = np.array(_eigval[_idx])
-            _eigvec = np.array([_eigvec[:,_i] for _i in _idx])
+            idx = np.argsort(eigval)[::-1]
+            eigval = np.array(eigval[idx])
+            eigvec = np.array([eigvec[:,i] for i in idx])
 
-            self._components = _eigvec[:self._n_components]
-            self._explained_variance = np.sum(_eigval[:self._n_components]) / np.sum(_eigval) * 100
+            self._components = eigvec[:self._n_components]
+            self._explained_variance = np.sum(eigval[:self._n_components]) / np.sum(eigval) * 100
 
-        elif self._solver == "svd":
+        elif self._method == "svd":
 
-            if max(_n_samples, _n_features) < 500 or self._n_components > .8 * min(_n_samples, _n_features): # full SVD
+            if max(n_samples, n_features) < 500 or self._n_components > .8 * min(n_samples, n_features): # full SVD
 
-                _U, _s, __ = sp.linalg.svd(_centered_data)
-                _variance = (_s ** 2) / (_n_samples - 1)
+                U, s, _ = sp.linalg.svd(centered_data)
+                variance = (s ** 2) / (n_samples - 1)
 
-                self._components = _U[:,:self._n_components]
-                self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
+                self._components = U[:,:self._n_components]
+                self._explained_variance = np.sum(variance[:self._n_components]) / np.sum(variance) * 100
 
             else: # randomised SVD
 
-                _n_dimensions = self._n_components + self._n_oversamples
+                n_dimensions = self._n_components + self._n_oversamples
                 # Sample (k + p) i.i.d. vectors from a normal distribution
-                _Omega = np.random.normal(size=(_n_features, _n_dimensions))
+                Omega = np.random.normal(size=(n_features, n_dimensions))
                 # Perform QR decompotision on (A @ At)^q @ A @ Omega
-                _Q = _Omega
-                for __ in range(self._n_iter):
-                    _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q))
-                    _Q, __ = np.linalg.qr(np.dot(np.transpose(_centered_data), _Q))
-                _Q, __ = np.linalg.qr(np.dot(_centered_data, _Q))
+                Q = Omega
+                for _ in range(self._n_iter):
+                    Q, _ = np.linalg.qr(np.dot(centered_data, Q))
+                    Q, _ = np.linalg.qr(np.dot(np.transpose(centered_data), Q))
+                Q, _ = np.linalg.qr(np.dot(centered_data, Q))
 
                 # Compute low-dimensional B
-                _B = np.dot(np.transpose(_Q), _centered_data)
+                B = np.dot(np.transpose(Q), centered_data)
 
                 # Find principal components of B
-                _Uh, _s, __ = sp.linalg.svd(_B)
-                _variance = (_s ** 2) / (_n_samples - 1)
-                _U = np.dot(_Q, _Uh)
+                Uh, s, _ = sp.linalg.svd(B)
+                variance = (s ** 2) / (n_samples - 1)
+                U = np.dot(Q, Uh)
 
-                self._components = _U[:,:self._n_components]
-                self._explained_variance = np.sum(_variance[:self._n_components]) / np.sum(_variance) * 100
+                self._components = U[:,:self._n_components]
+                self._explained_variance = np.sum(variance[:self._n_components]) / np.sum(variance) * 100
 
     """ Data centering
     Center features by removing the mean
-    :param: Data to center
+    :param: Data
     :return: Centered data
     """
     @cython.boundscheck(False)
@@ -129,8 +132,8 @@ cdef class PCA:
         return self._n_components
 
     @property
-    def solver(self):       
-        return self._solver
+    def method(self):       
+        return self._method
 
     @property
     def n_oversamples(self):       
@@ -156,11 +159,11 @@ cdef class PCA:
             raise ValueError("Number of components must be positive.")
         self._n_components = n_components
 
-    @solver.setter
-    def solver(self, str solver):
-        if solver not in ["svd", "eig"]:
-            raise ValueError("Solver must be either 'svd' or 'eig'.")
-        self._solver = solver
+    @method.setter
+    def method(self, str method):
+        if method not in ["svd", "eig"]:
+            raise ValueError("method must be either 'svd' or 'eig'.")
+        self._method = method
 
     @n_oversamples.setter
     def n_oversamples(self, int n_oversamples):
@@ -186,12 +189,24 @@ cdef class PCA:
 cdef class ICA:
 
     cdef int _n_components
+    cdef str _method
+
     cdef _components
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def __cinit__(self, int n_components):
+    def __cinit__(self, int n_components, str method="symmetric"):
+
+        if not isinstance(n_components, int):
+            raise TypeError("Number of components must be an integer.")
+        if n_components <= 0:
+            raise ValueError("Number of components must be positive.")
+
+        if method not in ["symmetric", "deflationary"]:
+            raise ValueError("method must be either 'svd' or 'eig'.")
+
         self._n_components = n_components
+        self._method = method
 
     """ Fit the model to the data
     Compute the individual components
@@ -201,35 +216,43 @@ cdef class ICA:
     @cython.wraparound(False)
     def fit(self, cnp.ndarray[cnp.float64_t, ndim=2] data):  
 
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] _centered_data, _whitened_data, _whitening_matrix
-        cdef cnp.ndarray[cnp.float64_t, ndim=1] _component
-        cdef cnp.ndarray _eigval, _eigvec
-        cdef Py_ssize_t _n_features = data.shape[1]
-        cdef Py_ssize_t _i
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] centered_data, whitened_data, whitening_matrix, components
+        cdef cnp.ndarray[cnp.float64_t, ndim=1] component
+        cdef cnp.ndarray eigval, eigvec
+        cdef Py_ssize_t n_features = data.shape[1]
+        cdef Py_ssize_t i
 
-        _centered_data = self._center(data)
-        _eigval, _eigvec, = sp.linalg.eigh(np.cov(np.transpose(_centered_data)))
-        _eigval, _eigvec = _eigval.real, _eigvec.real
-        _whitening_matrix = np.dot(_eigvec, np.dot(np.diag(1 / np.sqrt(_eigval+1e-10)), np.transpose(_eigvec)))
-        _whitened_data = np.dot(_centered_data, np.transpose(_whitening_matrix))
+        centered_data = self._center(data)
+        # Data whitening
+        eigval, eigvec, = sp.linalg.eigh(np.cov(np.transpose(centered_data)))
+        eigval, eigvec = eigval.real, eigvec.real
+        whitening_matrix = np.dot(eigvec, np.dot(np.diag(1 / np.sqrt(eigval+1e-10)), np.transpose(eigvec)))
+        whitened_data = np.dot(centered_data, np.transpose(whitening_matrix))
         # Test the constraint of the whitened data:
         # cov(X @ W) = I
-        np.testing.assert_allclose(np.cov(np.transpose(_whitened_data)), np.eye(_n_features), atol=1e-7)
+        np.testing.assert_allclose(np.cov(np.transpose(whitened_data)), np.eye(n_features), atol=1e-7)
         # Test the constraint of the whitening matrix:
         # W^T @ W = cov(X)^-1
-        np.testing.assert_allclose(np.linalg.inv(np.cov(np.transpose(data))), np.dot(np.transpose(_whitening_matrix), _whitening_matrix), atol=1e-7)
+        np.testing.assert_allclose(np.linalg.inv(np.cov(np.transpose(data))), np.dot(np.transpose(whitening_matrix), whitening_matrix), atol=1e-7)
+        whitened_data = np.transpose(whitened_data)
 
-        _whitened_data = np.transpose(_whitened_data)
-        _components = []
-        for _i in range(self._n_components):
-            _component = self._compute_unit(_whitened_data, _components)
-            _components.append(_component)
-        _components = np.vstack(_components)
-        # Test for independence of the components:
-        # S^T @ S = I
-        np.testing.assert_allclose(np.dot(np.transpose(_components), _components), np.eye(_n_features), atol=1e-7)
+        if self._method == "deflationary":
+            components_ = []
+            for i in range(self._n_components):
+                component = self._compute_unit(whitened_data, components_)
+                components_.append(component)
+            components_ = np.vstack(components_)
+            # Test for independence of the components:
+            # S^T @ S = I
+            np.testing.assert_allclose(np.dot(np.transpose(components_), components_), np.eye(n_features), atol=1e-7)
+            self._components = np.dot(components_, whitening_matrix)
 
-        self._components = np.dot(_components, _whitening_matrix)
+        elif self._method == "symmetric":
+            components = self._compute_matrix(whitened_data)
+            # Test for independence of the components:
+            # S^T @ S = I
+            np.testing.assert_allclose(np.dot(np.transpose(components), components), np.eye(n_features), atol=1e-7)
+            self._components = np.dot(components, whitening_matrix)
 
     """ Data centering
     Center features by removing the mean
@@ -262,24 +285,77 @@ cdef class ICA:
     @cython.wraparound(False)
     cdef cnp.ndarray[cnp.float64_t, ndim=1] _compute_unit(self, cnp.ndarray[cnp.float64_t, ndim=2] X, W):
         cdef cnp.ndarray[cnp.float64_t, ndim=1] w = np.random.rand(X.shape[0])
-        cdef cnp.ndarray[cnp.float64_t, ndim=1] _w, w0 
-        cdef Py_ssize_t _iter
+        cdef cnp.ndarray[cnp.float64_t, ndim=1] _w, w0
 
         w /= np.linalg.norm(w)
-        for _iter in range(1000):
+        for _ in range(1000):
             w0 = w
             w = (1 / X.shape[1]-1) * np.dot(X, self._g(np.dot(np.transpose(w), X))) - (1 / X.shape[1]-1) * np.dot(self._dg(np.dot(np.transpose(w), X)), np.ones((X.shape[1], 1))) * w
             for w_ in W:
                 w = w - np.dot(np.transpose(w), w_) * w_
             w /= np.linalg.norm(w) 
+
             # Check for convergence
             if 1 - np.abs(np.dot(np.transpose(w0), w)) < 1e-10:
                 break
         return w
 
+    """ Compute all independent component in parallel
+    :param X: Whitened data
+    :return: New indendent component matrix
+    """
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef cnp.ndarray[cnp.float64_t, ndim=1] _compute_matrix(self, cnp.ndarray[cnp.float64_t, ndim=2] X):
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] W = np.random.rand(size=(X.shape[0], self._n_components)), W0
+        cdef Py_ssize_t i
+
+        # Normalise component vectors in W
+        W = W / np.linalg.norm(W, axis=-1)[:, np.newaxis]
+        # Symmetric orthogonalisation
+        # W = (W @ W.T) ^ -1/2 @ W
+        eigval, eigvec = sp.linalg.eigh(np.dot(W, np.transpose(W)))
+        W = np.dot(np.dot(eigvec * (1 / np.sqrt(eigval)), np.transpose(eigvec)), W)
+
+        for _ in range(1000):
+            W0 = W
+            for i in range(self._n_components):
+                W[:, i] = (1 / X.shape[1]-1) * np.dot(X, self._g(np.dot(np.transpose(W[:, i]), X))) - (1 / X.shape[1]-1) * np.dot(self._dg(np.dot(np.transpose(W[:, i]), X)), np.ones((X.shape[1], 1))) * W[:, i]
+            # Symmetric orthogonalisation
+            # W = (W @ W.T) ^ -1/2 @ W
+            eigval, eigvec = sp.linalg.eigh(np.dot(W, np.transpose(W)))
+            W = np.dot(np.dot(eigvec * (1 / np.sqrt(eigval)), np.transpose(eigvec)), W)
+
+            # Check for convergence
+            if 1 - max(np.abs(np.diag(np.dot(W0, W)))) < 1e-10:
+                break
+        return W
+
+    @property
+    def n_components(self):       
+        return self._n_components
+
+    @property
+    def method(self):       
+        return self._method
+
     @property
     def components(self):
         return self._components
+
+    @n_components.setter
+    def n_components(self, int n_components):
+        if not isinstance(n_components, int):
+            raise TypeError("Number of components must be an integer.")
+        if n_components <= 0:
+            raise ValueError("Number of components must be positive.")
+        self._n_components = n_components
+
+    @method.setter
+    def method(self, str method):
+        if method not in ["symmetric", "deflationary"]:
+            raise ValueError("method must be either 'symmetric' or 'deflationary'.")
+        self._method = method
 
 
 """ Linear Discriminant Analysis (LDA)
