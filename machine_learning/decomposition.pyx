@@ -55,8 +55,8 @@ cdef class PCA:
 
         if len(data) == 0:
             raise ValueError("Data cannot be empty.")
-        if self._n_components >= data.shape[1]:
-            raise ValueError("Number of components must be smaller than the number of features in the data.")
+        if self._n_components > data.shape[1]:
+            raise ValueError("Number of components can't be greater than the number of features in the data.")
 
         cdef cnp.ndarray[cnp.float64_t, ndim=2] centered_data = self._center(np.transpose(data))
         cdef cnp.ndarray[cnp.float64_t, ndim=2] U, Uh, S, Vt, Omega, Q, B
@@ -203,7 +203,7 @@ cdef class ICA:
             raise ValueError("Number of components must be positive.")
 
         if method not in ["symmetric", "deflationary"]:
-            raise ValueError("method must be either 'svd' or 'eig'.")
+            raise ValueError("method must be either 'symmetric' or 'deflationary'.")
 
         self._n_components = n_components
         self._method = method
@@ -215,6 +215,11 @@ cdef class ICA:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def fit(self, cnp.ndarray[cnp.float64_t, ndim=2] data):  
+
+        if len(data) == 0:
+            raise ValueError("Data cannot be empty.")
+        if self._n_components > data.shape[1]:
+            raise ValueError("Number of components can't be greater than the number of features in the data.")
 
         cdef cnp.ndarray[cnp.float64_t, ndim=2] centered_data, whitened_data, whitening_matrix, components
         cdef cnp.ndarray[cnp.float64_t, ndim=1] component

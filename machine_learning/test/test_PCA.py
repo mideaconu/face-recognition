@@ -23,7 +23,7 @@ class PCATest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.pca = PCA(n_components=-1)
 
-    def test_solver_value(self):
+    def test_method_value(self):
         with self.assertRaises(ValueError):
             self.pca = PCA(n_components=1, method="qr")
 
@@ -63,7 +63,7 @@ class PCATest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.pca.n_components = -1
 
-    def test_solver_setter_value(self):
+    def test_method_setter_value(self):
         with self.assertRaises(ValueError):
             self.pca.method = "qr"
 
