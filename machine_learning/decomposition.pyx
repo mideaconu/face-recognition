@@ -214,7 +214,7 @@ cdef class ICA:
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def fit(self, cnp.ndarray[cnp.float64_t, ndim=2] data):  
+    def fit(self, cnp.ndarray[cnp.float64_t, ndim=2] data):
 
         if len(data) == 0:
             raise ValueError("Data cannot be empty.")
@@ -375,12 +375,19 @@ cdef class ICA:
 cdef class LDA:
 
     cdef int _n_components
+
     cdef _components
     cdef _W
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def __cinit__(self, int n_components):
+
+        if not isinstance(n_components, int):
+            raise TypeError("Number of components must be an integer.")
+        if n_components <= 0:
+            raise ValueError("Number of components must be positive.")
+
         self._n_components = n_components
 
     """ Fit the model to the data
@@ -389,12 +396,21 @@ cdef class LDA:
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def fit(self, cnp.ndarray[cnp.float64_t, ndim=2] data, cnp.ndarray labels):  
+    def fit(self, cnp.ndarray[cnp.float64_t, ndim=2] data, cnp.ndarray labels):
+
+        if len(data) == 0:
+            raise ValueError("Data cannot be empty.")
+        if self._n_components > data.shape[1]:
+            raise ValueError("Number of components can't be greater than the number of features in the data.")
+
+        if len(labels) == 0:
+            raise ValueError("Labels cannot be empty.")
+        if len(data) != len(labels):
+            raise ValueError("Labels and data must have the same length")
 
         cdef cnp.ndarray[cnp.float64_t, ndim=2] S_b, S_w, c_means
         cdef cnp.ndarray[cnp.float64_t, ndim=1] t_mean, 
-        cdef cnp.ndarray[cnp.long_t, ndim=1] c_sizes, c_indices
-        cdef cnp.ndarray[cnp.long_t, ndim=1] idx
+        cdef cnp.ndarray[cnp.long_t, ndim=1] c_sizes, c_indices, idx
         cdef cnp.ndarray eigval, eigvec, c_names
         cdef Py_ssize_t i
 
@@ -415,7 +431,7 @@ cdef class LDA:
         # Order eigenvalues and eigenvectors
         idx = np.argsort(eigval)[::-1]
         eigval = np.array(eigval[idx])
-        eigvec = np.array([eigvec[:,i] for i in idx])
+        eigvec = np.array([eigvec[:, idx]])
 
         self._components = eigvec[:self._n_components]
 
@@ -495,9 +511,21 @@ cdef class LDA:
         return S_w
 
     @property
+    def n_components(self):       
+        return self._n_components
+
+    @property
     def transformation_matrix(self):
         return self._W
 
     @property
     def components(self):
         return self._components 
+
+    @n_components.setter
+    def n_components(self, int n_components):
+        if not isinstance(n_components, int):
+            raise TypeError("Number of components must be an integer.")
+        if n_components <= 0:
+            raise ValueError("Number of components must be positive.")
+        self._n_components = n_components
