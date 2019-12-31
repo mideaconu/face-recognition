@@ -242,6 +242,7 @@ cdef class ICA:
         whitened_data = np.transpose(whitened_data)
 
         if self._method == "deflationary":
+
             components_ = []
             for i in range(self._n_components):
                 component = self._compute_unit(whitened_data, components_)
@@ -254,6 +255,7 @@ cdef class ICA:
             self._components = np.dot(components_, whitening_matrix)
 
         elif self._method == "symmetric":
+
             components = self._compute_matrix(whitened_data)
             # Test for independence of the components:
             # S^T @ S = I
@@ -383,33 +385,39 @@ cdef class LDA:
 
     """ Fit the model to the data
     Compute the individual components
-    :param: Data
+    :param: Data 
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def fit(self, cnp.ndarray[cnp.float64_t, ndim=2] data, labels):  
+    def fit(self, cnp.ndarray[cnp.float64_t, ndim=2] data, cnp.ndarray labels):  
 
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] _S_b, _S_w
-        cdef cnp.ndarray[cnp.float64_t, ndim=1] _t_mean
-        cdef cnp.ndarray[cnp.long_t, ndim=1] _idx
-        cdef cnp.ndarray _eigval, _eigvec
-        cdef _c_means, _c_sizes
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] S_b, S_w, c_means
+        cdef cnp.ndarray[cnp.float64_t, ndim=1] t_mean, 
+        cdef cnp.ndarray[cnp.long_t, ndim=1] c_sizes, c_indices
+        cdef cnp.ndarray[cnp.long_t, ndim=1] idx
+        cdef cnp.ndarray eigval, eigvec, c_names
+        cdef Py_ssize_t i
 
-        _c_means, _c_sizes = self._class_means(data, labels)
-        _t_mean = np.array(list(_c_means.values())).mean(axis=0)
-        _S_b = self._between_class(_c_means, _c_sizes, _t_mean)
-        _S_w = self._within_class(data, labels, _c_means)
-        self._W = np.dot(np.linalg.inv(_S_w), _S_b)
+        c_names, c_indices = np.unique(labels, return_inverse=True)
+        c_sizes = np.bincount(c_indices)
 
-        _eigval, _eigvec, = np.linalg.eigh(np.cov(self._W))
+        c_means = self._class_means(data, labels, c_sizes, c_indices)
+        t_mean = c_means.mean(axis=0)
+
+        S_b = self._between_class(c_means, c_sizes, t_mean)
+        S_w = self._within_class(data, labels, c_means, c_sizes, c_indices)
+
+        self._W = np.dot(np.linalg.inv(S_w), S_b)
+
+        eigval, eigvec, = np.linalg.eigh(np.cov(self._W))
         # sp.linalg.eig might return complex values, so convert them to float
-        _eigval, _eigvec = _eigval.real, _eigvec.real    
+        eigval, eigvec = eigval.real, eigvec.real    
         # Order eigenvalues and eigenvectors
-        _idx = np.argsort(_eigval)[::-1]
-        _eigval = np.array(_eigval[_idx])
-        _eigvec = np.array([_eigvec[:,_i] for _i in _idx])
+        idx = np.argsort(eigval)[::-1]
+        eigval = np.array(eigval[idx])
+        eigvec = np.array([eigvec[:,i] for i in idx])
 
-        self._components = _eigvec[:self._n_components]
+        self._components = eigvec[:self._n_components]
 
     """ Compute the mean for each class in the data
     :param data: Input data (n_samples x n_features)
@@ -419,15 +427,24 @@ cdef class LDA:
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef tuple _class_means(self, data, labels):
+    cdef cnp.ndarray[cnp.float64_t, ndim=2] _class_means(self, cnp.ndarray[cnp.float64_t, ndim=2] data, 
+                                                               cnp.ndarray labels, 
+                                                               cnp.ndarray[cnp.long_t, ndim=1] c_sizes, 
+                                                               cnp.ndarray[cnp.long_t, ndim=1] c_indices):
 
-        c_means = dict((class_, np.zeros(data.shape[1])) for class_ in set(labels))
-        c_sizes = dict((class_, 0) for class_ in set(labels))
-        for index in range(len(labels)):
-            c_sizes[labels[index]] += 1
-            c_means[labels[index]] += data[index]
-        means = {i: c_means[i]/c_sizes[i] for i in c_means}
-        return means, c_sizes
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] c_means = np.zeros((len(c_sizes), data.shape[1]))
+        cdef Py_ssize_t i, j
+
+        # Create a cumulative matrix with each class as a row
+        for i in range(len(labels)):
+            c_means[c_indices[i]] += data[i]
+
+        # Create class mean matrix
+        for i in range(c_means.shape[0]):
+            for j in range(c_means.shape[1]):
+                c_means[i, j] = c_means[i, j] / c_sizes[i]
+
+        return c_means
 
     """ Between-class Matrix
     :param c_means: List of class means
@@ -437,11 +454,16 @@ cdef class LDA:
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef cnp.ndarray[cnp.float64_t, ndim=2] _between_class(self, c_means, c_sizes, t_mean):
+    cdef cnp.ndarray[cnp.float64_t, ndim=2] _between_class(self, cnp.ndarray[cnp.float64_t, ndim=2] c_means, 
+                                                                 cnp.ndarray[cnp.long_t, ndim=1] c_sizes, 
+                                                                 cnp.ndarray[cnp.float64_t, ndim=1] t_mean):
 
-        S_b = np.zeros((len(t_mean), len(t_mean)))
-        for class_ in c_means.keys():
-            S_b += c_sizes[class_] * np.outer((c_means[class_] - t_mean), (c_means[class_] - t_mean))
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] S_b
+        cdef Py_ssize_t i
+
+        S_b = np.zeros((len(c_means[1]), len(c_means[1])))
+        for i in range(len(c_sizes)):
+            S_b += c_sizes[i] * np.outer((c_means[i] - t_mean), (c_means[i] - t_mean))
         return S_b
 
     """ Within-class Matrix
@@ -452,12 +474,24 @@ cdef class LDA:
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef cnp.ndarray[cnp.float64_t, ndim=2] _within_class(self, data, labels, c_means):
+    cdef cnp.ndarray[cnp.float64_t, ndim=2] _within_class(self, cnp.ndarray[cnp.float64_t, ndim=2] data, 
+                                                                cnp.ndarray labels, 
+                                                                cnp.ndarray[cnp.float64_t, ndim=2] c_means, 
+                                                                cnp.ndarray[cnp.long_t, ndim=1] c_sizes,
+                                                                cnp.ndarray[cnp.long_t, ndim=1] c_indices): 
 
-        data = np.array([data[i] - c_means[labels[i]] for i in range(data.shape[0])])
-        S_w = np.zeros((data.shape[1], data.shape[1]))
-        for class_ in c_means.keys():
-            S_w += np.dot(np.transpose(data[[i for i in range(len(labels)) if labels[i] == class_]]), data[[i for i in range(len(labels)) if labels[i] == class_]])
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] c_centered_data = np.copy(data), S_w
+        cdef Py_ssize_t i, j
+
+        # Remove the mean from each data entry point
+        for i in range(c_centered_data.shape[0]):
+            for j in range(c_centered_data.shape[1]):
+                c_centered_data[i, j] = data[i, j] - c_means[c_indices[i], j]
+
+        S_w = np.zeros((len(c_means[1]), len(c_means[1])))
+        for i in range(len(c_sizes)):
+            S_w += np.dot(np.transpose(c_centered_data[[j for j in range(len(labels)) if c_indices[j] == i]]), c_centered_data[[j for j in range(len(labels)) if c_indices[j] == i]])
+
         return S_w
 
     @property
