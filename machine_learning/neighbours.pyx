@@ -1,8 +1,8 @@
-import heapq
 import collections
+cimport cython
+
 import numpy as np
 cimport numpy as cnp
-cimport cython
 
 from machine_learning.data_structures import priority_queue
 
@@ -16,8 +16,9 @@ from machine_learning.data_structures import priority_queue
 cdef class kNN:
 
     cdef BallTree _ball_tree
-    cdef _distance
-    cdef _data, _labels, _pq, _first
+    cdef cnp.float64_t[:, :] _data
+    cdef int _leaf_size
+    cdef _distance, _labels, _pq
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -40,11 +41,59 @@ cdef class kNN:
         self._data = data
         self._labels = labels
         self._distance = distance
-        self._ball_tree = BallTree(self._data, self._distance, leaf_size)
+        self._leaf_size = leaf_size
+        self._ball_tree = BallTree(np.asarray(self._data), self._distance, self._leaf_size)
+
+    @property 
+    def data(self):
+        return self._data
+
+    @property 
+    def labels(self):
+        return self._labels
+
+    @property 
+    def distance(self):
+        return self._distance
+
+    @property 
+    def leaf_size(self):
+        return self._leaf_size
 
     @property 
     def ball_tree(self):
         return self._ball_tree
+
+    @data.setter
+    def data(self, cnp.ndarray[cnp.float64_t, ndim=2] data):
+        if len(data) == 0:
+            raise ValueError("Data cannot be empty.")
+        if len(data) != len(self._labels):
+            raise ValueError("Labels and data must have the same length")
+        self._data = data
+        self._ball_tree = BallTree(np.asarray(self._data), self._distance, self._leaf_size)
+
+    @labels.setter
+    def labels(self, cnp.ndarray labels):
+        if len(labels) == 0:
+            raise ValueError("Labels cannot be empty.")
+        if len(self._data) != len(labels):
+            raise ValueError("Labels and data must have the same length")
+        self._labels = labels
+
+    @distance.setter
+    def distance(self, distance):
+        if not isinstance(distance, collections.Callable):
+            raise ValueError("Distance metric must be a callable method.")
+        self._distance = distance
+        self._ball_tree = BallTree(np.asarray(self._data), self._distance, self._leaf_size)
+
+    @leaf_size.setter
+    def leaf_size(self, int leaf_size):
+        if leaf_size < 1:
+            raise ValueError("Leaf size must be a positive integer.")
+        self._leaf_size = leaf_size
+        self._ball_tree = BallTree(np.asarray(self._data), self._distance, self._leaf_size)
 
     """ Search the ball tree for the k nearest neighbours
     :param self: Instance to which the method belongs
@@ -62,7 +111,6 @@ cdef class kNN:
         if point.shape[0] != self._data.shape[1]:
             raise ValueError("Dimension of query point must match dimension of the data.")
 
-        # Initialize the priority queue with k infinity falues (distances) and origin points (neighbours)
         self._pq = priority_queue(np.transpose(np.vstack((np.arange(k), np.inf))))
         self._search_kd_subtree(self._ball_tree.root, k, point)
 
