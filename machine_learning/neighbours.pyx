@@ -4,6 +4,8 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 
+from machine_learning.data_structures import priority_queue
+
 
 """ k-Nearest Neighbours (kNN)
 :param data: Numpy training data (n_samples x n_features)
@@ -12,22 +14,22 @@ cimport cython
 :return leaf_size: Size of the ball tree leaves
 """
 cdef class kNN:
+
     cdef BallTree _ball_tree
-    cdef _data, _labels, _distance, _pq
+    cdef _distance
+    cdef _data, _labels, _pq, _first
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    @cython.nonecheck(False)
-    def __init__(self, cnp.ndarray[cnp.float64_t, ndim=2] data, labels, distance, int leaf_size):
+    def __init__(self, cnp.ndarray[cnp.float64_t, ndim=2] data, cnp.ndarray labels, distance, int leaf_size): # not None
 
-        if type(labels) is not np.ndarray:
-            raise ValueError("Labels must be in the form of aNumPy array.")
-
-        if not len(data):
+        if len(data) == 0:
             raise ValueError("Data cannot be empty.")
 
+        if len(labels) == 0:
+            raise ValueError("Labels cannot be empty.")
         if len(data) != len(labels):
-            raise ValueError("Data and labels must have the same length.")
+            raise ValueError("Labels and data must have the same length")
 
         if not isinstance(distance, collections.Callable):
             raise ValueError("Distance metric must be a callable method.")
@@ -51,11 +53,9 @@ cdef class kNN:
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    @cython.nonecheck(False)
     def find_knn(self, int k, cnp.ndarray[cnp.float64_t, ndim=1] point):
         if k <= 0:
             raise ValueError("Number of neighbours must be a positive integer.")
-
         if k > self._data.shape[0]:
             raise ValueError("Number of neighbours must be less than the number of data points.")
 
@@ -63,10 +63,10 @@ cdef class kNN:
             raise ValueError("Dimension of query point must match dimension of the data.")
 
         # Initialize the priority queue with k infinity falues (distances) and origin points (neighbours)
-        self._pq = [(np.inf, np.zeros(self._data.shape[1]))] * k
-        heapq.heapify(self._pq)
+        self._pq = priority_queue(np.transpose(np.vstack((np.arange(k), np.inf))))
         self._search_kd_subtree(self._ball_tree.root, k, point)
-        neighbour_labels = np.array([self._labels[self._data.tolist().index(i[1])] for i in self._pq])
+
+        neighbour_labels = np.array([self._labels[self._pq.pop()[0]] for _ in range(k)])
         return neighbour_labels
 
     """ Search one ball subtree for the k nearest neighbours
@@ -76,18 +76,17 @@ cdef class kNN:
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    @cython.nonecheck(False)
     cdef void _search_kd_subtree(self, BallNode node, int k, cnp.ndarray[cnp.float64_t, ndim=1] point):
         # Check whether the largest distance in the current priority queue is smaller than the distance to the node's ball
-        if self._distance(point, node.pivot) - node.radius >= heapq.nlargest(1, self._pq)[0][0]:
+        if self._distance(point, node.pivot) - node.radius >= self._pq.first()['value']:
             pass
         elif node.is_leaf():
-            for node_point in node.points:
-                if self._distance(point, node_point) < heapq.nlargest(1, self._pq)[0][0]:
-                    heapq.heappush(self._pq, (self._distance(point, node_point), node_point.tolist()))
-                    heapq._heapify_max(self._pq)
-                    if len(self._pq) > k:
-                        heapq._heappop_max(self._pq)
+            for i in node.points:
+                point_distance = self._distance(point, self._data[i])
+                if point_distance < self._pq.first()['value']:
+                    self._pq.push([i, point_distance])
+                    if self._pq.size() > k:
+                        self._pq.pop()
         else:
             if node.closest_child:
                 self._search_kd_subtree(node.closest_child, k, point)
@@ -101,54 +100,117 @@ cdef class kNN:
 :return leaf_size: Size of the ball tree leaves
 """
 cdef class BallTree:
+
     cdef BallNode _root
+    cdef _data, _distance, _leaf_size
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    @cython.nonecheck(False)
     def __init__(self, cnp.ndarray[cnp.float64_t, ndim=2] data, distance, int leaf_size):
-        self._root = BallNode(data, distance, leaf_size)
+
+        if len(data) == 0:
+            raise ValueError("Data cannot be empty.")
+
+        if not isinstance(distance, collections.Callable):
+            raise ValueError("Distance metric must be a callable method.")
+
+        if leaf_size < 1:
+            raise ValueError("Leaf size must be a positive integer.")
+
+        self._data = data
+        self._distance = distance
+        self._leaf_size = leaf_size
+        self._root = BallNode(data, np.arange(len(self._data)), distance, leaf_size)
+
+    @property
+    def data(self):
+        return self._data
+
+    @property
+    def distance(self):
+        return self._distance
+
+    @property
+    def leaf_size(self):
+        return self._leaf_size
 
     @property
     def root(self):
         return self._root
 
+    @data.setter
+    def data(self, cnp.ndarray[cnp.float64_t, ndim=2] data):
+        if len(data) == 0:
+            raise ValueError("Data cannot be empty.")
+        self._data = data
+
+    @distance.setter
+    def distance(self, distance):
+        if not isinstance(distance, collections.Callable):
+            raise ValueError("Distance metric must be a callable method.")
+        self._distance = distance
+
+    @leaf_size.setter
+    def leaf_size(self, int leaf_size):
+        if leaf_size < 1:
+            raise ValueError("Leaf size must be a positive integer.")
+        self._leaf_size = leaf_size
+
 
 """ Ball Tree Node
 :param data: Numpy training data (n_samples x n_features)
-:return distance: Distance metric function (e.g. Euclidean)
-:return leaf_size: Size of the ball tree leaves
+:param distance: Distance metric function (e.g. Euclidean)
+:param leaf_size: Size of the ball tree leaves
 """
 cdef class BallNode:
-    cdef _data, _pivot
+
+    cdef _points, _pivot
     cdef float _radius
     cdef BallNode _farthest_child, _closest_child
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    @cython.nonecheck(False)
-    def __init__(self, cnp.ndarray[cnp.float64_t, ndim=2] data, distance, int leaf_size):
-        self._data = data
-        self._farthest_child = None; self._closest_child = None
-        self._pivot = np.mean(self._data, axis=0)
+    def __cinit__(self, cnp.ndarray[cnp.float64_t, ndim=2] data, cnp.ndarray[cnp.long_t, ndim=1] points, distance, int leaf_size):
 
-        distances_from_pivot = [distance(self._pivot, point) for point in self._data]
-        farthest = heapq.nlargest(2, range(len(distances_from_pivot)), key=distances_from_pivot.__getitem__)
+        if len(data) == 0:
+            raise ValueError("Data cannot be empty.")
+            
+        if not isinstance(distance, collections.Callable):
+            raise ValueError("Distance metric must be a callable method.")
 
-        i_farthest = farthest[0]
-        self._radius = distance(self._pivot, self._data[i_farthest])
-        if len(farthest) > 1:
-            i_2nd_farthest = farthest[1]
-            farthest_child_points = []; closest_child_points = []
-            for point in self._data:
-                if distance(point, self._data[i_farthest]) <= distance(point, self._data[i_2nd_farthest]):
-                    farthest_child_points.append(point)
+        if leaf_size < 1:
+            raise ValueError("Leaf size must be a positive integer.")
+
+        self._points = points
+        self._farthest_child = None
+        self._closest_child = None
+        self._pivot = np.mean([data[i] for i in points], axis=0)
+        self._radius = 0
+
+        cdef list farthest_child_points, closest_child_points 
+        cdef cnp.ndarray[cnp.float64_t, ndim=1] farthest, second_farthest
+
+        p_queue = priority_queue([])
+
+        for i in points:
+            p_queue.push([i, distance(self._pivot, data[i])])
+
+        i_farthest, self._radius = p_queue.pop()
+        farthest = data[i_farthest]
+        
+        if p_queue.size() > 0:
+            second_farthest = data[p_queue.pop()[0]]
+            farthest_child_points = []
+            closest_child_points = []
+            for i in points:
+                if distance(data[i], farthest) <= distance(data[i], second_farthest):
+                    farthest_child_points.append(i)
                 else:
-                    closest_child_points.append(point)
+                    closest_child_points.append(i)
 
-        if len(self._data) > leaf_size:
-            self._farthest_child = BallNode(np.array(farthest_child_points), distance, leaf_size)
-            self._closest_child = BallNode(np.array(closest_child_points), distance, leaf_size)
+        if len(points) > leaf_size:
+            self._farthest_child = BallNode(data, np.array(farthest_child_points), distance, leaf_size)
+            self._closest_child = BallNode(data, np.array(closest_child_points), distance, leaf_size)
 
     @property
     def pivot(self):
@@ -160,7 +222,7 @@ cdef class BallNode:
 
     @property
     def points(self):
-        return self._data
+        return self._points
 
     @property
     def farthest_child(self):

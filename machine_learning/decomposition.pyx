@@ -18,8 +18,6 @@ cdef class PCA:
     cdef _components
     cdef float _explained_variance
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def __cinit__(self, int n_components, str method="svd", int n_oversamples=10, int n_iter=2): # hyperparameters recommended in Erichson et al. 2019
 
         if not isinstance(n_components, int):
@@ -193,8 +191,6 @@ cdef class ICA:
 
     cdef _components
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def __cinit__(self, int n_components, str method="symmetric"):
 
         if not isinstance(n_components, int):
@@ -379,8 +375,6 @@ cdef class LDA:
     cdef _components
     cdef _W
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def __cinit__(self, int n_components):
 
         if not isinstance(n_components, int):
@@ -431,7 +425,7 @@ cdef class LDA:
         # Order eigenvalues and eigenvectors
         idx = np.argsort(eigval)[::-1]
         eigval = np.array(eigval[idx])
-        eigvec = np.array([eigvec[:, idx]])
+        eigvec = np.array([eigvec[:,i] for i in idx])
 
         self._components = eigvec[:self._n_components]
 

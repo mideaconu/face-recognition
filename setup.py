@@ -5,8 +5,17 @@ from setuptools import setup
 from distutils.extension import Extension
 from Cython.Build import cythonize
 
-extension = [Extension(name="machine_learning.decomposition", sources=["machine_learning/decomposition.pyx"], include_dirs=[numpy.get_include()]),
-             Extension(name="machine_learning.neighbours", sources=["machine_learning/neighbours.pyx"], include_dirs=[numpy.get_include()])]
+extension = [Extension(name="machine_learning.decomposition", 
+                       sources=["machine_learning/decomposition.pyx"], 
+                       include_dirs=[numpy.get_include()]),
+             Extension(name="machine_learning.neighbours", 
+                       sources=["machine_learning/neighbours.pyx"], 
+                       include_dirs=[numpy.get_include()]), 
+             Extension(name="machine_learning.data_structures", 
+                       sources=["data_structures/priority_queue.pyx", 
+                                "data_structures/KeyedPriorityQueue.cpp"], 
+                       language='c++', 
+                       include_dirs=[numpy.get_include()])]
 
 setup(
     name="comparative_feret_algorithms",
