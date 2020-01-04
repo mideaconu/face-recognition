@@ -22,9 +22,9 @@ cdef class kNN:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def __init__(self, cnp.ndarray[cnp.float64_t, ndim=2] data, cnp.ndarray labels, distance, int leaf_size): # not None
+    def __init__(self, cnp.ndarray[cnp.float64_t, ndim=2] data, cnp.ndarray labels, distance, int leaf_size):
 
-        if len(data) == 0:
+        if not data:
             raise ValueError("Data cannot be empty.")
 
         if len(labels) == 0:

@@ -1,40 +1,40 @@
+cimport cython
+
 import numpy as np
 import scipy as sp
 cimport numpy as cnp
-cimport cython
 
 
 """ Principal Component Analysis (PCA)
-:param data: Non-sparse dataset in NumPy ndarray format (n_samples x n_features)
-:param n_components: Number of principal components to be selected
+
+:param n_components: 
+    Number of principal components to be selected
+:param method: 
+    Method of PC computation, through eigendecomposition ("eig") or SVD ("svd") -- default is "svd"
+:param n_oversamples: 
+    Number of oversamples used in randomised SVD -- default is 10
+:param n_iter: 
+    Number of power iterations used in randomised SVD -- default is 2
 """
 cdef class PCA:
 
-    cdef int _n_components
+    cdef int _n_components, _n_oversamples, _n_iter
     cdef str _method
-    cdef int _n_oversamples
-    cdef int _n_iter
 
-    cdef _components
+    cdef cnp.float64_t[:, :] _components
     cdef float _explained_variance
 
     def __cinit__(self, int n_components, str method="svd", int n_oversamples=10, int n_iter=2): # hyperparameters recommended in Erichson et al. 2019
 
-        if not isinstance(n_components, int):
-            raise TypeError("Number of components must be an integer.")
         if n_components <= 0:
             raise ValueError("Number of components must be positive.")
 
         if method not in ["svd", "eig"]:
             raise ValueError("method must be either 'svd' or 'eig'.")
 
-        if not isinstance(n_oversamples, int):
-            raise TypeError("Number of oversamples must be an integer.")
         if n_oversamples <= 0:
             raise ValueError("Number of oversamples must be positive.")
 
-        if not isinstance(n_iter, int):
-            raise TypeError("Number of power iterations must be an integer.")
         if n_iter <= 0:
             raise ValueError("Number of iterations must be positive.")
 
@@ -45,19 +45,21 @@ cdef class PCA:
 
     """ Fit the model
     Compute the principal components and total explained variance
-    :param: Data
+
+    :param data: 
+        Non-sparse dataset in NumPy format (n_samples x n_features)
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def fit(self, cnp.ndarray[cnp.float64_t, ndim=2] data):
 
-        if len(data) == 0:
+        if data.size == 0:
             raise ValueError("Data cannot be empty.")
         if self._n_components > data.shape[1]:
-            raise ValueError("Number of components can't be greater than the number of features in the data.")
+            raise ValueError("Number of components can't be greater than the number of data features.")
 
         cdef cnp.ndarray[cnp.float64_t, ndim=2] centered_data = self._center(np.transpose(data))
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] U, Uh, S, Vt, Omega, Q, B
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] U, Uh, Q, B
         cdef cnp.ndarray[cnp.float64_t, ndim=1] s, variance
         cdef cnp.ndarray[cnp.long_t, ndim=1] idx
         cdef cnp.ndarray eigval, eigvec
@@ -96,9 +98,8 @@ cdef class PCA:
 
                 n_dimensions = self._n_components + self._n_oversamples
                 # Sample (k + p) i.i.d. vectors from a normal distribution
-                Omega = np.random.normal(size=(n_features, n_dimensions))
-                # Perform QR decompotision on (A @ At)^q @ A @ Omega
-                Q = Omega
+                Q = np.random.normal(size=(n_features, n_dimensions))
+                # Perform QR decompotision on (A @ At)^q @ A @ Q
                 for _ in range(self._n_iter):
                     Q, _ = np.linalg.qr(np.dot(centered_data, Q))
                     Q, _ = np.linalg.qr(np.dot(np.transpose(centered_data), Q))
@@ -117,8 +118,12 @@ cdef class PCA:
 
     """ Data centering
     Center features by removing the mean
-    :param: Data
-    :return: Centered data
+
+    :param data: 
+        Dataset in NumPy format (n_samples x n_features)
+
+    :return: 
+        Data centered in the origin
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -143,7 +148,7 @@ cdef class PCA:
 
     @property
     def components(self):       
-        return self._components
+        return np.asarray(self._components)
 
     @property
     def explained_variance(self):
@@ -151,8 +156,6 @@ cdef class PCA:
 
     @n_components.setter
     def n_components(self, int n_components):
-        if not isinstance(n_components, int):
-            raise TypeError("Number of components must be an integer.")
         if n_components <= 0:
             raise ValueError("Number of components must be positive.")
         self._n_components = n_components
@@ -165,36 +168,33 @@ cdef class PCA:
 
     @n_oversamples.setter
     def n_oversamples(self, int n_oversamples):
-        if not isinstance(n_oversamples, int):
-            raise TypeError("Number of oversamples must be an integer.")
         if n_oversamples <= 0:
             raise ValueError("Number of oversamples must be positive.")
         self._n_oversamples = n_oversamples
 
     @n_iter.setter
     def n_iter(self, int n_iter):
-        if not isinstance(n_iter, int):
-            raise TypeError("Number of power iterations must be an integer.")
         if n_iter <= 0:
             raise ValueError("Number of iterations must be positive.")
         self._n_iter = n_iter
 
 
 """ Independent Component Analysis (ICA)
-:param data: NumPy dataset to perform ICA on (n_samples x n_features)
-:param n_components: Number of independent components to be selected
+
+:param n_components:  
+    Number of independent components to be selected
+:param method: 
+    Method of IC computation, through "symmetric" or "deflationary" algorithms -- default is "symmetric"
 """
 cdef class ICA:
 
     cdef int _n_components
     cdef str _method
 
-    cdef _components
+    cdef cnp.float64_t[:, :] _components
 
     def __cinit__(self, int n_components, str method="symmetric"):
 
-        if not isinstance(n_components, int):
-            raise TypeError("Number of components must be an integer.")
         if n_components <= 0:
             raise ValueError("Number of components must be positive.")
 
@@ -206,24 +206,27 @@ cdef class ICA:
 
     """ Fit the model to the data
     Compute the individual components
-    :param: Data
+
+    :param data: 
+        Non-sparse dataset in NumPy format (n_samples x n_features)
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def fit(self, cnp.ndarray[cnp.float64_t, ndim=2] data):
 
-        if len(data) == 0:
+        if data.size == 0:
             raise ValueError("Data cannot be empty.")
         if self._n_components > data.shape[1]:
             raise ValueError("Number of components can't be greater than the number of features in the data.")
 
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] centered_data, whitened_data, whitening_matrix, components
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] centered_data = self._center(data)
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] whitened_data, whitening_matrix, components
         cdef cnp.ndarray[cnp.float64_t, ndim=1] component
         cdef cnp.ndarray eigval, eigvec
-        cdef Py_ssize_t n_features = data.shape[1]
-        cdef Py_ssize_t i
+        cdef list components_ = []
 
-        centered_data = self._center(data)
+        cdef Py_ssize_t n_features = data.shape[1]
+
         # Data whitening
         eigval, eigvec, = sp.linalg.eigh(np.cov(np.transpose(centered_data)))
         eigval, eigvec = eigval.real, eigvec.real
@@ -239,30 +242,28 @@ cdef class ICA:
 
         if self._method == "deflationary":
 
-            components_ = []
-            for i in range(self._n_components):
+            for _ in range(self._n_components):
                 component = self._compute_unit(whitened_data, components_)
                 components_.append(component)
-            components_ = np.vstack(components_)
-            # Test for independence of the components:
-            # S^T @ S = I
-            np.testing.assert_allclose(np.dot(np.transpose(components_), components_), np.eye(n_features), atol=1e-7)
-
-            self._components = np.dot(components_, whitening_matrix)
+            components = np.vstack(components_)
 
         elif self._method == "symmetric":
-
             components = self._compute_matrix(whitened_data)
-            # Test for independence of the components:
-            # S^T @ S = I
-            np.testing.assert_allclose(np.dot(np.transpose(components), components), np.eye(n_features), atol=1e-7)
+            
+        # Test for independence of the components:
+        # S^T @ S = I
+        np.testing.assert_allclose(np.dot(np.transpose(components), components), np.eye(n_features), atol=1e-7)
 
-            self._components = np.dot(components, whitening_matrix)
+        self._components = np.dot(components, whitening_matrix)
 
     """ Data centering
     Center features by removing the mean
-    :param: Data to center
-    :return: Centered data
+
+    :param data: 
+        Dataset in NumPy format (n_samples x n_features)
+
+    :return: 
+        Data centered in the origin
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -282,13 +283,19 @@ cdef class ICA:
         return 12 * u**2
 
     """ Compute one independent component
-    :param X: Whitened data
-    :param W: Existing independent components
-    :return: New indendent component
+
+    :param X: 
+        Whitened data
+    :param W: 
+        Existing independent components
+
+    :return:
+        New indendent component
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef cnp.ndarray[cnp.float64_t, ndim=1] _compute_unit(self, cnp.ndarray[cnp.float64_t, ndim=2] X, W):
+    cdef cnp.ndarray[cnp.float64_t, ndim=1] _compute_unit(self, cnp.ndarray[cnp.float64_t, ndim=2] X, list W):
+
         cdef cnp.ndarray[cnp.float64_t, ndim=1] w = np.random.rand(X.shape[0])
         cdef cnp.ndarray[cnp.float64_t, ndim=1] _w, w0
 
@@ -306,13 +313,19 @@ cdef class ICA:
         return w
 
     """ Compute all independent component in parallel
-    :param X: Whitened data
-    :return: New indendent component matrix
+
+    :param X: 
+        Whitened data
+
+    :return: 
+        New indendent component matrix
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cdef cnp.ndarray[cnp.float64_t, ndim=1] _compute_matrix(self, cnp.ndarray[cnp.float64_t, ndim=2] X):
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] W = np.random.rand(X.shape[0], self._n_components), W0
+
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] W = np.random.rand(X.shape[0], self._n_components)
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] W0
         cdef Py_ssize_t i
 
         # Normalise component vectors in W
@@ -346,12 +359,10 @@ cdef class ICA:
 
     @property
     def components(self):
-        return self._components
+        return np.asarray(self._components)
 
     @n_components.setter
     def n_components(self, int n_components):
-        if not isinstance(n_components, int):
-            raise TypeError("Number of components must be an integer.")
         if n_components <= 0:
             raise ValueError("Number of components must be positive.")
         self._n_components = n_components
@@ -364,48 +375,50 @@ cdef class ICA:
 
 
 """ Linear Discriminant Analysis (LDA)
-:param data: NumPy dataset to perform LDA on (n_samples x n_features)
-:param labels: List of labels (classes) associated with each data point
-:param n_components: Number of dimensions to be selected
+
+:param n_components: 
+    Number of dimensions to be selected
 """
 cdef class LDA:
 
     cdef int _n_components
 
-    cdef _components
-    cdef _W
+    cdef cnp.float64_t[:, :] _components, _W
 
     def __cinit__(self, int n_components):
 
-        if not isinstance(n_components, int):
-            raise TypeError("Number of components must be an integer.")
         if n_components <= 0:
             raise ValueError("Number of components must be positive.")
 
         self._n_components = n_components
 
-    """ Fit the model to the data
-    Compute the individual components
-    :param: Data 
+    """ Fit the model
+    Compute the linear discriminant
+
+    :param data: 
+        Dataset in NumPy format (n_samples x n_features)
+    :param labels: 
+        Array of labels associated with each data point (n_samples x 1)
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def fit(self, cnp.ndarray[cnp.float64_t, ndim=2] data, cnp.ndarray labels):
 
-        if len(data) == 0:
+        if data.size == 0:
             raise ValueError("Data cannot be empty.")
         if self._n_components > data.shape[1]:
             raise ValueError("Number of components can't be greater than the number of features in the data.")
 
-        if len(labels) == 0:
+        if labels.size == 0:
             raise ValueError("Labels cannot be empty.")
-        if len(data) != len(labels):
+        if data.shape[0] != labels.size:
             raise ValueError("Labels and data must have the same length")
 
         cdef cnp.ndarray[cnp.float64_t, ndim=2] S_b, S_w, c_means
         cdef cnp.ndarray[cnp.float64_t, ndim=1] t_mean, 
         cdef cnp.ndarray[cnp.long_t, ndim=1] c_sizes, c_indices, idx
         cdef cnp.ndarray eigval, eigvec, c_names
+
         cdef Py_ssize_t i
 
         c_names, c_indices = np.unique(labels, return_inverse=True)
@@ -429,11 +442,19 @@ cdef class LDA:
 
         self._components = eigvec[:self._n_components]
 
-    """ Compute the mean for each class in the data
-    :param data: Input data (n_samples x n_features)
-    :param labels: Input data labels
-    :return means: Dictionary of class:mean entries
-    :return c_sizes: List of class sizes
+    """ Compute the mean for each class
+
+    :param data: 
+        Dataset in NumPy format (n_samples x n_features)
+    :param labels: 
+        Array of labels associated with each data point (n_samples x 1)
+    :param c_sizes: 
+        Array of class sizes
+    :param c_indices: 
+        Array of class indices
+
+    :return c_means: 
+        Array of class means
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -446,7 +467,7 @@ cdef class LDA:
         cdef Py_ssize_t i, j
 
         # Create a cumulative matrix with each class as a row
-        for i in range(len(labels)):
+        for i in range(labels.size):
             c_means[c_indices[i]] += data[i]
 
         # Create class mean matrix
@@ -457,10 +478,16 @@ cdef class LDA:
         return c_means
 
     """ Between-class Matrix
-    :param c_means: List of class means
-    :param c_sizes: List of class sizes
-    :param t_mean: Total mean
-    :return: Between-class matrix
+
+    :param c_means: 
+        Array of class means
+    :param c_sizes: 
+        Array of class sizes
+    :param t_mean: 
+        Total mean
+
+    :return: 
+        Between-class matrix
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -472,15 +499,26 @@ cdef class LDA:
         cdef Py_ssize_t i
 
         S_b = np.zeros((len(c_means[1]), len(c_means[1])))
-        for i in range(len(c_sizes)):
+        for i in range(c_sizes.size):
             S_b += c_sizes[i] * np.outer((c_means[i] - t_mean), (c_means[i] - t_mean))
+
         return S_b
 
     """ Within-class Matrix
-    :param data: Input data (n_samples x n_features)
-    :param labels: Input data labels
-    :param c_means: List of class means
-    :return: Within-class matrix
+
+    :param data: 
+        Dataset in NumPy format (n_samples x n_features)
+    :param labels: 
+        Array of labels associated with each data point (n_samples x 1)
+    :param c_means: 
+        Array of class means
+    :param c_sizes: 
+        Array of class sizes
+    :param c_indices: 
+        Array of class indices
+
+    :return: 
+        Within-class matrix
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -490,7 +528,8 @@ cdef class LDA:
                                                                 cnp.ndarray[cnp.long_t, ndim=1] c_sizes,
                                                                 cnp.ndarray[cnp.long_t, ndim=1] c_indices): 
 
-        cdef cnp.ndarray[cnp.float64_t, ndim=2] c_centered_data = np.copy(data), S_w
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] c_centered_data = np.copy(data)
+        cdef cnp.ndarray[cnp.float64_t, ndim=2] S_w
         cdef Py_ssize_t i, j
 
         # Remove the mean from each data entry point
@@ -499,8 +538,8 @@ cdef class LDA:
                 c_centered_data[i, j] = data[i, j] - c_means[c_indices[i], j]
 
         S_w = np.zeros((len(c_means[1]), len(c_means[1])))
-        for i in range(len(c_sizes)):
-            S_w += np.dot(np.transpose(c_centered_data[[j for j in range(len(labels)) if c_indices[j] == i]]), c_centered_data[[j for j in range(len(labels)) if c_indices[j] == i]])
+        for i in range(c_sizes.size):
+            S_w += np.dot(np.transpose(c_centered_data[[j for j in range(labels.size) if c_indices[j] == i]]), c_centered_data[[j for j in range(labels.size) if c_indices[j] == i]])
 
         return S_w
 
@@ -514,12 +553,10 @@ cdef class LDA:
 
     @property
     def components(self):
-        return self._components 
+        return np.asarray(self._components)
 
     @n_components.setter
     def n_components(self, int n_components):
-        if not isinstance(n_components, int):
-            raise TypeError("Number of components must be an integer.")
         if n_components <= 0:
             raise ValueError("Number of components must be positive.")
         self._n_components = n_components
