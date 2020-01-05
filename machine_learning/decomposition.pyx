@@ -24,7 +24,7 @@ cdef class PCA:
     cdef cnp.float64_t[:, :] _components
     cdef float _explained_variance
 
-    def __cinit__(self, int n_components, str method="svd", int n_oversamples=10, int n_iter=2): # hyperparameters recommended in Erichson et al. 2019
+    def __cinit__(self, int n_components, str method="svd", int n_oversamples=10, int n_iter=2):
 
         if n_components <= 0:
             raise ValueError("Number of components must be positive.")
