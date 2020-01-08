@@ -1,3 +1,7 @@
+#
+# Author: Mihai Ionut Deaconu
+#
+
 import sys
 
 import unittest

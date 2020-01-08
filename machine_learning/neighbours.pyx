@@ -1,3 +1,7 @@
+#
+# Author: Mihai Ionut Deaconu
+#
+
 import collections
 cimport cython
 
@@ -212,24 +216,6 @@ cdef class BallTree:
     @property
     def root(self):
         return self._root
-
-    @data.setter
-    def data(self, cnp.ndarray[cnp.float64_t, ndim=2] data):
-        if data.size == 0:
-            raise ValueError("Data cannot be empty.")
-        self._data = data
-
-    @distance.setter
-    def distance(self, distance):
-        if not isinstance(distance, collections.Callable):
-            raise ValueError("Distance metric must be a callable method.")
-        self._distance = distance
-
-    @leaf_size.setter
-    def leaf_size(self, int leaf_size):
-        if leaf_size < 1:
-            raise ValueError("Leaf size must be a positive integer.")
-        self._leaf_size = leaf_size
 
 
 """ Ball Tree Node

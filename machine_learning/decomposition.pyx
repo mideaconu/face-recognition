@@ -1,3 +1,7 @@
+#
+# Author: Mihai Ionut Deaconu
+#
+
 cimport cython
 
 import numpy as np
@@ -32,10 +36,10 @@ cdef class PCA:
         if method not in ["svd", "eig"]:
             raise ValueError("method must be either 'svd' or 'eig'.")
 
-        if n_oversamples <= 0:
+        if n_oversamples < 1:
             raise ValueError("Number of oversamples must be positive.")
 
-        if n_iter <= 0:
+        if n_iter < 1:
             raise ValueError("Number of iterations must be positive.")
 
         self._n_components = n_components
@@ -156,7 +160,7 @@ cdef class PCA:
 
     @n_components.setter
     def n_components(self, int n_components):
-        if n_components <= 0:
+        if n_components < 1:
             raise ValueError("Number of components must be positive.")
         self._n_components = n_components
 
@@ -168,13 +172,13 @@ cdef class PCA:
 
     @n_oversamples.setter
     def n_oversamples(self, int n_oversamples):
-        if n_oversamples <= 0:
+        if n_oversamples < 1:
             raise ValueError("Number of oversamples must be positive.")
         self._n_oversamples = n_oversamples
 
     @n_iter.setter
     def n_iter(self, int n_iter):
-        if n_iter <= 0:
+        if n_iter < 1:
             raise ValueError("Number of iterations must be positive.")
         self._n_iter = n_iter
 
@@ -195,7 +199,7 @@ cdef class ICA:
 
     def __cinit__(self, int n_components, str method="symmetric"):
 
-        if n_components <= 0:
+        if n_components < 1:
             raise ValueError("Number of components must be positive.")
 
         if method not in ["symmetric", "deflationary"]:
@@ -387,7 +391,7 @@ cdef class LDA:
 
     def __cinit__(self, int n_components):
 
-        if n_components <= 0:
+        if n_components < 1:
             raise ValueError("Number of components must be positive.")
 
         self._n_components = n_components
@@ -398,7 +402,7 @@ cdef class LDA:
     :param data: 
         Dataset in NumPy format (n_samples x n_features)
     :param labels: 
-        Array of labels associated with each data point (n_samples x 1)
+        Array of labels associated to each data point (n_samples x 1)
     """
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -447,7 +451,7 @@ cdef class LDA:
     :param data: 
         Dataset in NumPy format (n_samples x n_features)
     :param labels: 
-        Array of labels associated with each data point (n_samples x 1)
+        Array of labels associated to each data point (n_samples x 1)
     :param c_sizes: 
         Array of class sizes
     :param c_indices: 
@@ -509,7 +513,7 @@ cdef class LDA:
     :param data: 
         Dataset in NumPy format (n_samples x n_features)
     :param labels: 
-        Array of labels associated with each data point (n_samples x 1)
+        Array of labels associated to each data point (n_samples x 1)
     :param c_means: 
         Array of class means
     :param c_sizes: 
