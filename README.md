@@ -12,6 +12,15 @@ For testing purposes the standard FERET methodogoly was adopted. The FERET test 
     <td colspan="3">Population-influenced dataset</td>
     <td colspan="3">Fairness-aware dataset</td>
   </tr>
+  <tr>
+    <td></td>
+    <td>L1</td>
+    <td>L2</td>
+    <td>COS</td>
+    <td>L1</td>
+    <td>L2</td>
+    <td>COS</td>
+  </tr>
 </table>
 
 Delac, Kresimir & Grgic, Mislav & Grgic, Sonja. (2005). Independent comparative study of PCA, ICA, and LDA on the FERET data set. International Journal of Imaging Systems and Technology. 15. 252 - 260. 10.1002/ima.20059. 
