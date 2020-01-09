@@ -1,3 +1,8 @@
+#
+# Author: Abhijit Mondal
+# https://github.com/funktor/stokastik/tree/master/Cython/py_keyed_priority_queue
+#
+
 from libcpp.vector cimport vector
 import collections
 

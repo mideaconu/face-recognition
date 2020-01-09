@@ -1,5 +1,5 @@
 #
-# Author: Mihai Ionut Deaconu
+# Author: Mihai-Ionut Deaconu
 #
 
 cimport cython
