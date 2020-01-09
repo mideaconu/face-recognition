@@ -9,10 +9,12 @@ For testing purposes the standard FERET methodogoly was adopted. The FERET test 
 <table>
   <tr>
     <td></td>
+    <td></td>
     <td colspan="3">Population-influenced dataset</td>
     <td colspan="3">Fairness-aware dataset</td>
   </tr>
   <tr>
+    <td></td>
     <td></td>
     <td>L1</td>
     <td>L2</td>
@@ -20,6 +22,46 @@ For testing purposes the standard FERET methodogoly was adopted. The FERET test 
     <td>L1</td>
     <td>L2</td>
     <td>COS</td>
+  </tr>
+  <tr>
+    <td>FB probe set</td>
+    <td>PCA</td>
+    <td>73.31%</td>
+    <td>73.81%</td>
+    <td>76.23%</td>
+    <td>72.22%</td>
+    <td>73.14%</td>
+    <td>75.48%</td>
+  </tr>
+  <tr>
+    <td>FB probe set</td>
+    <td>ICA1</td>
+    <td>62.01%</td>
+    <td>63.26%</td>
+    <td>77.07%</td>
+    <td>60.59%</td>
+    <td>61.34%</td>
+    <td>74.39%</td>
+  </tr>
+  <tr>
+    <td>FB probe set</td>
+    <td>ICA2</td>
+    <td>60%</td>
+    <td>62.68%</td>
+    <td>76.82%</td>
+    <td>58.24%</td>
+    <td>60.42%</td>
+    <td>74.14%</td>
+  </tr>
+  <tr>
+    <td>FB probe set</td>
+    <td>LDA</td>
+    <td>76.23%</td>
+    <td>73.81%</td>
+    <td>76.23%</td>
+    <td>78.74%</td>
+    <td>73.14%</td>
+    <td>75.56%</td>
   </tr>
 </table>
 
