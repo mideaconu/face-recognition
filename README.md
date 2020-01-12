@@ -35,7 +35,7 @@ For testing purposes the standard FERET methodogoly was adopted. The FERET test 
       <td>72.22%</td>
       <td>73.14%</td>
       <td><b>75.48%</b></td>
-      <td>-0.83%</td>
+      <td style="color:red">-0.83%</td>
     </tr>
     <tr>
       <td></td>
