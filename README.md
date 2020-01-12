@@ -11,8 +11,8 @@ For testing purposes the standard FERET methodogoly was adopted. The FERET test 
     <tr>
       <td></td>
       <td></td>
-      <td colspan="3"><center>Population-influenced dataset</center></td>
-      <td colspan="3"><center>Fairness-aware dataset</center></td>
+      <td colspan="3" align="center">Population-influenced dataset</center></td>
+      <td colspan="3" align="center"><center>Fairness-aware dataset</center></td>
       <td>Average difference</td>
     </tr>
     <tr>
