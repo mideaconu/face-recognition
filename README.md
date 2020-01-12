@@ -13,194 +13,194 @@ For testing purposes the standard FERET methodogoly was adopted. The FERET test 
       <td></td>
       <td colspan="3" align="center">Population-influenced dataset</center></td>
       <td colspan="3" align="center"><center>Fairness-aware dataset</center></td>
-      <td>Average difference</td>
+      <td align="center">Average difference</td>
     </tr>
     <tr>
       <td></td>
       <td></td>
-      <td>L1</td>
-      <td>L2</td>
-      <td>COS</td>
-      <td>L1</td>
-      <td>L2</td>
-      <td>COS</td>
+      <td align="center">L1</td>
+      <td align="center">L2</td>
+      <td align="center">COS</td>
+      <td align="center">L1</td>
+      <td align="center">L2</td>
+      <td align="center">COS</td>
       <td></td>
     </tr>
     <tr>
       <td>FB probe set</td>
-      <td>PCA</td>
-      <td>73.31%</td>
-      <td>73.81%</td>
-      <td><b>76.23%</b></td>
-      <td>72.22%</td>
-      <td>73.14%</td>
-      <td><b>75.48%</b></td>
-      <td style="color:red">-0.83%</td>
+      <td align="center">PCA</td>
+      <td align="center">73.31%</td>
+      <td align="center">73.81%</td>
+      <td align="center"><b>76.23%</b></td>
+      <td align="center">72.22%</td>
+      <td align="center">73.14%</td>
+      <td align="center"><b>75.48%</b></td>
+      <td align="center">-0.83%</td>
     </tr>
     <tr>
       <td></td>
-      <td>ICA1</td>
-      <td>62.01%</td>
-      <td>63.26%</td>
-      <td><b>77.07%</b></td>
-      <td>60.59%</td>
-      <td>61.34%</td>
-      <td><b>74.39%</b></td>
-      <td>-2%</td>
+      <td align="center">ICA1</td>
+      <td align="center">62.01%</td>
+      <td align="center">63.26%</td>
+      <td align="center"><b>77.07%</b></td>
+      <td align="center">60.59%</td>
+      <td align="center">61.34%</td>
+      <td align="center"><b>74.39%</b></td>
+      <td align="center">-2%</td>
     </tr>
     <tr>
       <td></td>
-      <td>ICA2</td>
-      <td>60%</td>
-      <td>62.68%</td>
-      <td><b>76.82%<b/></td>
-      <td>58.24%</td>
-      <td>60.42%</td>
-      <td><b>74.14%</b></td>
-      <td>-2.23%</td>
+      <td align="center">ICA2</td>
+      <td align="center">60%</td>
+      <td align="center">62.68%</td>
+      <td align="center"><b>76.82%<b/></td>
+      <td align="center">58.24%</td>
+      <td align="center">60.42%</td>
+      <td align="center"><b>74.14%</b></td>
+      <td align="center">-2.23%</td>
     </tr>
     <tr>
       <td></td>
-      <td>LDA</td>
-      <td><b>76.23%</b></td>
-      <td>73.81%</td>
-      <td><b>76.23%</b></td>
-      <td><b>78.74%</b></td>
-      <td>73.14%</td>
-      <td>75.56%</td>
-      <td>0.39%</td>
+      <td align="center">LDA</td>
+      <td align="center"><b>76.23%</b></td>
+      <td align="center">73.81%</td>
+      <td align="center"><b>76.23%</b></td>
+      <td align="center"><b>78.74%</b></td>
+      <td align="center">73.14%</td>
+      <td align="center">75.56%</td>
+      <td align="center">0.39%</td>
     </tr>
     <tr>
       <td>FC probe set</td>
-      <td>PCA</td>
-      <td><b>70.62%</b></td>
-      <td>55.15%</td>
-      <td>50.52%</td>
-      <td><b>65.46%</b></td>
-      <td>53.09%</td>
-      <td>47.94%</td>
-      <td>-3.27%</td>
+      <td align="center">PCA</td>
+      <td align="center"><b>70.62%</b></td>
+      <td align="center">55.15%</td>
+      <td align="center">50.52%</td>
+      <td align="center"><b>65.46%</b></td>
+      <td align="center">53.09%</td>
+      <td align="center">47.94%</td>
+      <td align="center">-3.27%</td>
     </tr>
     <tr>
       <td></td>
-      <td>ICA1</td>
-      <td>65.98%</td>
-      <td>67.01%</td>
-      <td><b>72.16%</b></td>
-      <td>62.37%</td>
-      <td>63.4%</td>
-      <td><b>72.68%</b></td>
-      <td>-2.23%</td>
+      <td align="center">ICA1</td>
+      <td align="center">65.98%</td>
+      <td align="center">67.01%</td>
+      <td align="center"><b>72.16%</b></td>
+      <td align="center">62.37%</td>
+      <td align="center">63.4%</td>
+      <td align="center"><b>72.68%</b></td>
+      <td align="center">-2.23%</td>
     </tr>
     <tr>
       <td></td>
-      <td>ICA2</td>
-      <td>61.86%</td>
-      <td>65.98%</td>
-      <td><b>72.16%</b></td>
-      <td>61.86%</td>
-      <td>63.4%</td>
-      <td><b>72.16%</b></td>
-      <td>-0.86%</td>
+      <td align="center">ICA2</td>
+      <td align="center">61.86%</td>
+      <td align="center">65.98%</td>
+      <td align="center"><b>72.16%</b></td>
+      <td align="center">61.86%</td>
+      <td align="center">63.4%</td>
+      <td align="center"><b>72.16%</b></td>
+      <td align="center">-0.86%</td>
     </tr>
     <tr>
       <td></td>
-      <td>LDA</td>
-      <td><b>64.95%</b></td>
-      <td>55.15%</td>
-      <td>50.52%</td>
-      <td><b>57.73%</b></td>
-      <td>53.09%</td>
-      <td>47.94%</td>
-      <td>-3.95%</td>
+      <td align="center">LDA</td>
+      <td align="center"><b>64.95%</b></td>
+      <td align="center">55.15%</td>
+      <td align="center">50.52%</td>
+      <td align="center"><b>57.73%</b></td>
+      <td align="center">53.09%</td>
+      <td align="center">47.94%</td>
+      <td align="center">-3.95%</td>
     </tr>
     <tr>
       <td>DUP1 probe set</td>
-      <td>PCA</td>
-      <td><b>31.44%</b></td>
-      <td>29.5%</td>
-      <td>32.69%</td>
-      <td><b>32.41%</b></td>
-      <td>28.81%</td>
-      <td>30.75%</td>
-      <td>-0.55%</td>
+      <td align="center">PCA</td>
+      <td align="center"><b>31.44%</b></td>
+      <td align="center">29.5%</td>
+      <td align="center">32.69%</td>
+      <td align="center"><b>32.41%</b></td>
+      <td align="center">28.81%</td>
+      <td align="center">30.75%</td>
+      <td align="center">-0.55%</td>
     </tr>
     <tr>
       <td></td>
-      <td>ICA1</td>
-      <td>25.07%</td>
-      <td>27.56%</td>
-      <td><b>40.72%</b></td>
-      <td>29.22%</td>
-      <td>30.06%</td>
-      <td><b>42.24%</b></td>
-      <td>2.72%</td>
+      <td align="center">ICA1</td>
+      <td align="center">25.07%</td>
+      <td align="center">27.56%</td>
+      <td align="center"><b>40.72%</b></td>
+      <td align="center">29.22%</td>
+      <td align="center">30.06%</td>
+      <td align="center"><b>42.24%</b></td>
+      <td align="center">2.72%</td>
     </tr>
     <tr>
       <td></td>
-      <td>ICA2</td>
-      <td>21.05%</td>
-      <td>27.15%</td>
-      <td><b>40.72%</b></td>
-      <td>27.84%</td>
-      <td>29.92%</td>
-      <td><b>42.38%</b></td>
-      <td>3.74%</td>
+      <td align="center">ICA2</td>
+      <td align="center">21.05%</td>
+      <td align="center">27.15%</td>
+      <td align="center"><b>40.72%</b></td>
+      <td align="center">27.84%</td>
+      <td align="center">29.92%</td>
+      <td align="center"><b>42.38%</b></td>
+      <td align="center">3.74%</td>
     </tr>
     <tr>
       <td></td>
-      <td>LDA</td>
-      <td><b>35.18%</b></td>
-      <td>29.5%</td>
-      <td>32.69%</td>
-      <td><b>32.41%</b></td>
-      <td>28.81%</td>
-      <td>30.75%</td>
-      <td>-1.8%</td>
+      <td align="center">LDA</td>
+      <td align="center"><b>35.18%</b></td>
+      <td align="center">29.5%</td>
+      <td align="center">32.69%</td>
+      <td align="center"><b>32.41%</b></td>
+      <td align="center">28.81%</td>
+      <td align="center">30.75%</td>
+      <td align="center">-1.8%</td>
     </tr>
     <tr>
       <td>DUP2 probe set</td>
-      <td>PCA</td>
-      <td>19.66%</td>
-      <td>18.8%</td>
-      <td><b>23.5%</b></td>
-      <td><b>23.93%</b></td>
-      <td>19.23%</td>
-      <td>23.08%</td>
-      <td>1.42%</td>
+      <td align="center">PCA</td>
+      <td align="center">19.66%</td>
+      <td align="center">18.8%</td>
+      <td align="center"><b>23.5%</b></td>
+      <td align="center"><b>23.93%</b></td>
+      <td align="center">19.23%</td>
+      <td align="center">23.08%</td>
+      <td align="center">1.42%</td>
     </tr>
     <tr>
       <td></td>
-      <td>ICA1</td>
-      <td>14.1%</td>
-      <td>15.81%</td>
-      <td><b>37.18%</b></td>
-      <td>19.23%</td>
-      <td>18.8%</td>
-      <td><b>39.32%</b></td>
-      <td>3.42%</td>
+      <td align="center">ICA1</td>
+      <td align="center">14.1%</td>
+      <td align="center">15.81%</td>
+      <td align="center"><b>37.18%</b></td>
+      <td align="center">19.23%</td>
+      <td align="center">18.8%</td>
+      <td align="center"><b>39.32%</b></td>
+      <td align="center">3.42%</td>
     </tr>
     <tr>
       <td></td>
-      <td>ICA2</td>
-      <td>12.82%</td>
-      <td>14.96%</td>
-      <td><b>36.75%</b></td>
-      <td>18.8%</td>
-      <td>18.38%</td>
-      <td><b>38.89%</b></td>
-      <td>3.84%</td>
+      <td align="center">ICA2</td>
+      <td align="center">12.82%</td>
+      <td align="center">14.96%</td>
+      <td align="center"><b>36.75%</b></td>
+      <td align="center">18.8%</td>
+      <td align="center">18.38%</td>
+      <td align="center"><b>38.89%</b></td>
+      <td align="center">3.84%</td>
     </tr>
     <tr>
       <td></td>
-      <td>LDA</td>
-      <td><b>25.21%</b></td>
-      <td>18.8%</td>
-      <td>23.5%</td>
-      <td><b>24.36%</b></td>
-      <td>19.23%</td>
-      <td>23.08%</td>
-      <td>-0.28%</td>
+      <td align="center">LDA</td>
+      <td align="center"><b>25.21%</b></td>
+      <td align="center">18.8%</td>
+      <td align="center">23.5%</td>
+      <td align="center"><b>24.36%</b></td>
+      <td align="center">19.23%</td>
+      <td align="center">23.08%</td>
+      <td align="center">-0.28%</td>
     </tr>
   </table>
 </p>
