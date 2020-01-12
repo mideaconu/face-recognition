@@ -4,7 +4,7 @@ The present project represents a comparative analysis of facial projection techn
 
 The training methodology is based on the one used in [1]. Training images are first preprocessed by mean substraction and standardization. PCA is then performed, resulting in a 180-dimensional subspace (40% of 450) which preserves 99.66% of the information in population-influenced data, and 99.68% in fairness-aware data respectively. These projections were then used as input data for ICA and LDA. The resulting spaces were used to project previously unseen images, and to test the accuracy of the projection by comparing them to other projected facial images of the same individual.
 
-For testing purposes the standard FERET methodogoly was adopted. The FERET test dataset contains 5 subsets: a gallery set of 1,196 images and four probe sets (fb, fc, dup1, and dup2) of different sizes that present the subjects in different postures or at a later time. The methodology involved training a kNN model on the gallery images, and finding the nearest neighbour of each projected image in the probe set. Cumulating the success rates gives the performance of a projection technique on that test set. Three different distance measures were used for comparison: L1, L2, and cosine angle. The results have been compared between the population-influenced and fairness-aware datasets, and can be found in the table below:
+For testing purposes the standard FERET methodogoly was adopted. The FERET test dataset contains 5 subsets: a gallery set of 1,196 images and four probe sets (fb, fc, dup1, and dup2) of different sizes that present the subjects in different postures or at a later time. The methodology involved training a kNN model on the gallery images, and finding the nearest neighbour of each projected image in the probe set. Cumulating the success rates gives the performance of a projection technique on that test set. Three different distance measures were used for comparison: L1, L2, and cosine angle. The results have been compared between the population-influenced and fairness-aware datasets, and can be found in the table below.
 
 <p align="center">
   <table>
@@ -205,6 +205,205 @@ For testing purposes the standard FERET methodogoly was adopted. The FERET test 
   </table>
 </p>
 
+In addition to the FERET testing methodology, the projections trained with the two datasets were subject to a fairness-aware testing methodology, aimed to compare their performances on an ethnically fair testing set (33% Caucasian, 33% African, 33% South-East Asian), as well as the three subsets including one ethnicity only. The results are shown in the table below.
 
+<p align="center">
+  <table>
+    <tr>
+      <td></td>
+      <td></td>
+      <td colspan="3" align="center">Population-influenced dataset</center></td>
+      <td colspan="3" align="center"><center>Fairness-aware dataset</center></td>
+      <td align="center">Average difference</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td></td>
+      <td align="center">L1</td>
+      <td align="center">L2</td>
+      <td align="center">COS</td>
+      <td align="center">L1</td>
+      <td align="center">L2</td>
+      <td align="center">COS</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Fair probe set</td>
+      <td align="center">PCA</td>
+      <td align="center">77.33%%</td>
+      <td align="center">76.67%</td>
+      <td align="center"><b>78%</b></td>
+      <td align="center"><b>79.33%</b></td>
+      <td align="center">76%</td>
+      <td align="center">78%</td>
+      <td align="center">-0.83%</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td align="center">ICA1</td>
+      <td align="center">68.67%</td>
+      <td align="center">69.33%</td>
+      <td align="center"><b>80.67%</b></td>
+      <td align="center">70.67%</td>
+      <td align="center">69.33%</td>
+      <td align="center"><b>83.33%</b></td>
+      <td align="center">-2%</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td align="center">ICA2</td>
+      <td align="center">68.67%</td>
+      <td align="center">69.33%</td>
+      <td align="center"><b>80.67%<b/></td>
+      <td align="center">71.33%</td>
+      <td align="center">69.33%</td>
+      <td align="center"><b>83.33%</b></td>
+      <td align="center">-2.23%</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td align="center">LDA</td>
+      <td align="center"><b>81.33%</b></td>
+      <td align="center">76.67%</td>
+      <td align="center">77.33%</td>
+      <td align="center"><b>78.67%</b></td>
+      <td align="center">76%</td>
+      <td align="center">77.33%</td>
+      <td align="center"><b>0.39%</b></td>
+    </tr>
+    <tr>
+      <td>Caucasian probe set</td>
+      <td align="center">PCA</td>
+      <td align="center"><b>92%</b></td>
+      <td align="center"><b>92%</b></td>
+      <td align="center"><b>92%</b></td>
+      <td align="center">92%</td>
+      <td align="center">90%</td>
+      <td align="center"><b>96%</b></td>
+      <td align="center">-3.27%</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td align="center">ICA1</td>
+      <td align="center">88%</td>
+      <td align="center">88%</td>
+      <td align="center"><b>92%</b></td>
+      <td align="center">90%</td>
+      <td align="center">92%</td>
+      <td align="center"><b>96%</b></td>
+      <td align="center">-2.23%</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td align="center">ICA2</td>
+      <td align="center">84%</td>
+      <td align="center">88%</td>
+      <td align="center"><b>92%</b></td>
+      <td align="center">92%</td>
+      <td align="center">92%</td>
+      <td align="center"><b>96%</b></td>
+      <td align="center">-0.86%</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td align="center">LDA</td>
+      <td align="center"><b>92%</b></td>
+      <td align="center"><b>92%</b></td>
+      <td align="center"><b>92%</b></td>
+      <td align="center"><b>92%</b></td>
+      <td align="center">90%</td>
+      <td align="center"><b>92%</b></td>
+      <td align="center">-3.95%</td>
+    </tr>
+    <tr>
+      <td>South-East Asian probe set</td>
+      <td align="center">PCA</td>
+      <td align="center"><b>78%</b></td>
+      <td align="center">76%</td>
+      <td align="center">76%</td>
+      <td align="center"><b>78%</b></td>
+      <td align="center"><b>78%</b></td>
+      <td align="center"><b>78%</b></td>
+      <td align="center">-0.55%</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td align="center">ICA1</td>
+      <td align="center">66%</td>
+      <td align="center">66%</td>
+      <td align="center"><b>80%</b></td>
+      <td align="center">74%</td>
+      <td align="center">78%</td>
+      <td align="center"><b>88%</b></td>
+      <td align="center"><b>2.72%</b></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td align="center">ICA2</td>
+      <td align="center">66%</td>
+      <td align="center">66%</td>
+      <td align="center"><b>80%</b></td>
+      <td align="center">76%</td>
+      <td align="center">78%</td>
+      <td align="center"><b>88%</b></td>
+      <td align="center"><b>3.74%</b></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td align="center">LDA</td>
+      <td align="center"><b>82%</b></td>
+      <td align="center">76%</td>
+      <td align="center">76%</td>
+      <td align="center"><b>80%</b></td>
+      <td align="center">78%</td>
+      <td align="center">78%</td>
+      <td align="center">-1.8%</td>
+    </tr>
+    <tr>
+      <td>African probe set</td>
+      <td align="center">PCA</td>
+      <td align="center"><b>66%</b></td>
+      <td align="center">62%</td>
+      <td align="center">56%</td>
+      <td align="center"><b>64%</b></td>
+      <td align="center">60%</td>
+      <td align="center">56%</td>
+      <td align="center"><b>1.42%</b></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td align="center">ICA1</td>
+      <td align="center">68%</td>
+      <td align="center">66%</td>
+      <td align="center"><b>80%</b></td>
+      <td align="center">70%</td>
+      <td align="center">66%</td>
+      <td align="center"><b>76%</b></td>
+      <td align="center"><b>3.42%</b></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td align="center">ICA2</td>
+      <td align="center">68%</td>
+      <td align="center">66%</td>
+      <td align="center"><b>80%</b></td>
+      <td align="center">64%</td>
+      <td align="center">64%</td>
+      <td align="center"><b>74%</b></td>
+      <td align="center"><b>3.84%</b></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td align="center">LDA</td>
+      <td align="center"><b>66%</b></td>
+      <td align="center">62%</td>
+      <td align="center">56%</td>
+      <td align="center"><b>62%</b></td>
+      <td align="center">60%</td>
+      <td align="center">56%</td>
+      <td align="center">-0.28%</td>
+    </tr>
+  </table>
+</p>
 
 [1] Delac, Kresimir & Grgic, Mislav & Grgic, Sonja. (2005). Independent comparative study of PCA, ICA, and LDA on the FERET data set. International Journal of Imaging Systems and Technology. 15. 252 - 260. 10.1002/ima.20059. 
