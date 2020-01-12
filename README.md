@@ -68,7 +68,7 @@ For testing purposes the standard FERET methodogoly was adopted. The FERET test 
       <td align="center"><b>78.74%</b></td>
       <td align="center">73.14%</td>
       <td align="center">75.56%</td>
-      <td align="center">0.39%</td>
+      <td align="center"><b>0.39%</b></td>
     </tr>
     <tr>
       <td>FC probe set</td>
@@ -134,7 +134,7 @@ For testing purposes the standard FERET methodogoly was adopted. The FERET test 
       <td align="center">29.22%</td>
       <td align="center">30.06%</td>
       <td align="center"><b>42.24%</b></td>
-      <td align="center">2.72%</td>
+      <td align="center"><b>2.72%</b></td>
     </tr>
     <tr>
       <td></td>
@@ -145,7 +145,7 @@ For testing purposes the standard FERET methodogoly was adopted. The FERET test 
       <td align="center">27.84%</td>
       <td align="center">29.92%</td>
       <td align="center"><b>42.38%</b></td>
-      <td align="center">3.74%</td>
+      <td align="center"><b>3.74%</b></td>
     </tr>
     <tr>
       <td></td>
@@ -167,7 +167,7 @@ For testing purposes the standard FERET methodogoly was adopted. The FERET test 
       <td align="center"><b>23.93%</b></td>
       <td align="center">19.23%</td>
       <td align="center">23.08%</td>
-      <td align="center">1.42%</td>
+      <td align="center"><b>1.42%</b></td>
     </tr>
     <tr>
       <td></td>
@@ -178,7 +178,7 @@ For testing purposes the standard FERET methodogoly was adopted. The FERET test 
       <td align="center">19.23%</td>
       <td align="center">18.8%</td>
       <td align="center"><b>39.32%</b></td>
-      <td align="center">3.42%</td>
+      <td align="center"><b>3.42%</b></td>
     </tr>
     <tr>
       <td></td>
@@ -189,7 +189,7 @@ For testing purposes the standard FERET methodogoly was adopted. The FERET test 
       <td align="center">18.8%</td>
       <td align="center">18.38%</td>
       <td align="center"><b>38.89%</b></td>
-      <td align="center">3.84%</td>
+      <td align="center"><b>3.84%</b></td>
     </tr>
     <tr>
       <td></td>
