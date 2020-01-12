@@ -272,7 +272,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center"><b>0.39%</b></td>
     </tr>
     <tr>
-      <td>Caucasian probe set</td>
+      <td>Caucasian</td>
       <td align="center">PCA</td>
       <td align="center"><b>92%</b></td>
       <td align="center"><b>92%</b></td>
@@ -316,7 +316,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center">-3.95%</td>
     </tr>
     <tr>
-      <td>South-East Asian probe set</td>
+      <td>South-East Asian</td>
       <td align="center">PCA</td>
       <td align="center"><b>78%</b></td>
       <td align="center">76%</td>
@@ -360,7 +360,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center">-1.8%</td>
     </tr>
     <tr>
-      <td>African probe set</td>
+      <td>African</td>
       <td align="center">PCA</td>
       <td align="center"><b>66%</b></td>
       <td align="center">62%</td>
