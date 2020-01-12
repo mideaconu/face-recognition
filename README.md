@@ -247,7 +247,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center">70.67%</td>
       <td align="center">69.33%</td>
       <td align="center"><b>83.33%</b></td>
-      <td align="center">-2%</td>
+      <td align="center"><b>1.55%</b></td>
     </tr>
     <tr>
       <td></td>
@@ -258,7 +258,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center">71.33%</td>
       <td align="center">69.33%</td>
       <td align="center"><b>83.33%</b></td>
-      <td align="center">-2.23%</td>
+      <td align="center"><b>1.77%</b></td>
     </tr>
     <tr>
       <td></td>
@@ -269,7 +269,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center"><b>78.67%</b></td>
       <td align="center">76%</td>
       <td align="center">77.33%</td>
-      <td align="center"><b>0.39%</b></td>
+      <td align="center">-1.11%</td>
     </tr>
     <tr>
       <td>Caucasian</td>
@@ -280,7 +280,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center">92%</td>
       <td align="center">90%</td>
       <td align="center"><b>96%</b></td>
-      <td align="center">-3.27%</td>
+      <td align="center"><b>0.66%</b></td>
     </tr>
     <tr>
       <td></td>
@@ -291,7 +291,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center">90%</td>
       <td align="center">92%</td>
       <td align="center"><b>96%</b></td>
-      <td align="center">-2.23%</td>
+      <td align="center"><b>4%</b></td>
     </tr>
     <tr>
       <td></td>
@@ -302,7 +302,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center">92%</td>
       <td align="center">92%</td>
       <td align="center"><b>96%</b></td>
-      <td align="center">-0.86%</td>
+      <td align="center"><b>5.33%</b></td>
     </tr>
     <tr>
       <td></td>
@@ -313,7 +313,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center"><b>92%</b></td>
       <td align="center">90%</td>
       <td align="center"><b>92%</b></td>
-      <td align="center">-3.95%</td>
+      <td align="center">-0.66%</td>
     </tr>
     <tr>
       <td>SE Asian</td>
@@ -324,7 +324,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center"><b>78%</b></td>
       <td align="center"><b>78%</b></td>
       <td align="center"><b>78%</b></td>
-      <td align="center">-0.55%</td>
+      <td align="center"><b>1.33%</b></td>
     </tr>
     <tr>
       <td></td>
@@ -335,7 +335,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center">74%</td>
       <td align="center">78%</td>
       <td align="center"><b>88%</b></td>
-      <td align="center"><b>2.72%</b></td>
+      <td align="center"><b>9.33%</b></td>
     </tr>
     <tr>
       <td></td>
@@ -346,7 +346,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center">76%</td>
       <td align="center">78%</td>
       <td align="center"><b>88%</b></td>
-      <td align="center"><b>3.74%</b></td>
+      <td align="center"><b>10%</b></td>
     </tr>
     <tr>
       <td></td>
@@ -357,7 +357,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center"><b>80%</b></td>
       <td align="center">78%</td>
       <td align="center">78%</td>
-      <td align="center">-1.8%</td>
+      <td align="center"><b>0.66%<b></td>
     </tr>
     <tr>
       <td>African</td>
@@ -368,7 +368,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center"><b>64%</b></td>
       <td align="center">60%</td>
       <td align="center">56%</td>
-      <td align="center"><b>1.42%</b></td>
+      <td align="center">-1.33%</td>
     </tr>
     <tr>
       <td></td>
@@ -379,7 +379,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center">70%</td>
       <td align="center">66%</td>
       <td align="center"><b>76%</b></td>
-      <td align="center"><b>3.42%</b></td>
+      <td align="center">-1.33%</td>
     </tr>
     <tr>
       <td></td>
@@ -390,7 +390,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center">64%</td>
       <td align="center">64%</td>
       <td align="center"><b>74%</b></td>
-      <td align="center"><b>3.84%</b></td>
+      <td align="center">-4%</td>
     </tr>
     <tr>
       <td></td>
@@ -401,7 +401,7 @@ In addition to the FERET testing methodology, the projections trained with the t
       <td align="center"><b>62%</b></td>
       <td align="center">60%</td>
       <td align="center">56%</td>
-      <td align="center">-0.28%</td>
+      <td align="center">-2%</td>
     </tr>
   </table>
 </p>
